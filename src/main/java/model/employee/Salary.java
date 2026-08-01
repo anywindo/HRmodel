@@ -1,12 +1,16 @@
 package model.employee;
 
+import jakarta.persistence.Embeddable;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Objects;
 
+@Embeddable
 public final class Salary {
 
-    private final BigDecimal amount;
+    private BigDecimal amount;
+
+    protected Salary() {}
 
     public Salary(BigDecimal amount) {
         if (amount == null) {

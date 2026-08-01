@@ -1,45 +1,39 @@
 package model.employee;
 
+import jakarta.persistence.Embeddable;
 import java.util.Objects;
 
+@Embeddable
 public final class FullName {
 
-    private final String firstName;
-    private final String middleName;
-    private final String lastName;
+    private String firstName;
+    private String middleName;
+    private String lastName;
+
+    protected FullName() {}
 
     public FullName(String firstName, String middleName, String lastName) {
-        this.firstName = validateName(firstName, "First name");
-        this.middleName = validateOptionalName(middleName);
-        this.lastName = validateName(lastName, "Last name");
-    }
-
-    private String validateName(String name, String fieldName) {
-        if (name == null || name.isBlank()) {
-            throw new IllegalArgumentException(fieldName + " is required.");
+        if (firstName == null || firstName.isBlank()) {
+            throw new IllegalArgumentException("First name is required.");
+        }
+        if (lastName == null || lastName.isBlank()) {
+            throw new IllegalArgumentException("Last name is required.");
         }
 
-        name = name.trim();
-
-        if (name.contains(" ")) {
-            throw new IllegalArgumentException(fieldName + " cannot contain spaces.");
+        String combined = (firstName.trim() + " " 
+                + (middleName != null && !middleName.isBlank() ? middleName.trim() + " " : "") 
+                + lastName.trim()).replaceAll("\\s+", " ");
+                
+        String[] words = combined.split(" ");
+        
+        this.firstName = words[0];
+        this.lastName = words[words.length - 1];
+        
+        if (words.length > 2) {
+            this.middleName = String.join(" ", java.util.Arrays.copyOfRange(words, 1, words.length - 1));
+        } else {
+            this.middleName = "";
         }
-
-        return name;
-    }
-
-    private String validateOptionalName(String name) {
-        if (name == null || name.isBlank()) {
-            return "";
-        }
-
-        name = name.trim();
-
-        if (name.contains(" ")) {
-            throw new IllegalArgumentException("Middle name cannot contain spaces.");
-        }
-
-        return name;
     }
 
     public String getFirstName() {

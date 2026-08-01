@@ -1,8 +1,13 @@
 package model.employee;
 
+import jakarta.persistence.Embeddable;
+
+@Embeddable
 public final class PhoneNumber {
-    private final String phoneNumber;
-    private final String countryCode;
+    private String phoneNumber;
+    private String countryCode;
+
+    protected PhoneNumber() {}
 
     public PhoneNumber(String phoneNumber, String countryCode) {
         if (countryCode == null || countryCode.isBlank()) {
