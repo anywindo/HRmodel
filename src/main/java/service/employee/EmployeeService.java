@@ -59,6 +59,10 @@ public class EmployeeService {
         Employee employee = employeeRepository.findByEmployeeId(employeeId)
                 .orElseThrow(() -> new IllegalArgumentException("Employee not found"));
 
+        if (employee.getStatus() == EmployeeStatus.TERMINATED) {
+            throw new IllegalStateException("Cannot edit a terminated employee");
+        }
+
         if (request.getEmail() != null) {
             employee.changeEmail(new Email(request.getEmail()));
         }
@@ -97,6 +101,11 @@ public class EmployeeService {
     public void deleteEmployee(String employeeId) {
         Employee employee = employeeRepository.findByEmployeeId(employeeId)
                 .orElseThrow(() -> new IllegalArgumentException("Employee not found"));
+        
+        if (employee.getStatus() == EmployeeStatus.TERMINATED) {
+            throw new IllegalStateException("Employee is already terminated");
+        }
+        
         employee.terminate();
         employeeRepository.save(employee);
     }
