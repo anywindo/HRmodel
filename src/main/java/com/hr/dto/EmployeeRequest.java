@@ -23,6 +23,7 @@ public class EmployeeRequest {
     private String salaryCurrency; // Unused in backend currently but accepted
     private String status;
     private String maritalStatus;
+    private String departmentId;
 
     // Getters and Setters
     public String getFirstName() { return firstName; }
@@ -53,4 +54,6 @@ public class EmployeeRequest {
     public void setStatus(String status) { this.status = status; }
     public String getMaritalStatus() { return maritalStatus; }
     public void setMaritalStatus(String maritalStatus) { this.maritalStatus = maritalStatus; }
+    public String getDepartmentId() { return departmentId; }
+    public void setDepartmentId(String departmentId) { this.departmentId = departmentId; }
 }

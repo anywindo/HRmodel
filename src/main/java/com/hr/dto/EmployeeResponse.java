@@ -3,7 +3,6 @@ package com.hr.dto;
 import model.employee.Employee;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 
 public class EmployeeResponse {
     private Long id;
@@ -21,6 +20,7 @@ public class EmployeeResponse {
     private SalaryDto salary;
     private String status;
     private String maritalStatus;
+    private DepartmentDto department;
 
     public EmployeeResponse(Employee employee) {
         this.id = employee.getId();
@@ -45,6 +45,12 @@ public class EmployeeResponse {
         );
         this.status = employee.getStatus().name();
         this.maritalStatus = employee.getMaritalStatus() != null ? employee.getMaritalStatus().name() : null;
+        if (employee.getDepartment() != null) {
+            this.department = new DepartmentDto(
+                employee.getDepartment().getDepartmentId().getValue(),
+                employee.getDepartment().getName()
+            );
+        }
     }
 
     public static class FullNameDto {
@@ -71,6 +77,12 @@ public class EmployeeResponse {
         public SalaryDto(BigDecimal a, String c) { this.amount = a; this.currency = c; }
     }
 
+    public static class DepartmentDto {
+        public String departmentId;
+        public String name;
+        public DepartmentDto(String id, String n) { this.departmentId = id; this.name = n; }
+    }
+
     // Getters
     public Long getId() { return id; }
     public String getEmployeeId() { return employeeId; }
@@ -84,4 +96,5 @@ public class EmployeeResponse {
     public SalaryDto getSalary() { return salary; }
     public String getStatus() { return status; }
     public String getMaritalStatus() { return maritalStatus; }
+    public DepartmentDto getDepartment() { return department; }
 }
