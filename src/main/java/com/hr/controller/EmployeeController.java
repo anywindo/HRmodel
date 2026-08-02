@@ -10,7 +10,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/employees")
-@CrossOrigin(origins = "http://localhost:5173") // Allow React Frontend
+@CrossOrigin(origins = "${cors.allowed.origins}") // Allow React Frontend via env property
 public class EmployeeController {
 
     private final EmployeeService employeeService;
