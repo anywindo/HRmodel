@@ -6,31 +6,45 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public class EmployeeResponse {
+    private Long id;
     private String employeeId;
     
     private FullNameDto fullName;
     private EmailDto email;
     private PhoneNumberDto phoneNumber;
     
-    private LocalDate dateOfBirth;
-    private LocalDate hireDate;
+    private String dateOfBirth;
+    private String hireDate;
     
     private String gender;
     private String sex;
     private SalaryDto salary;
     private String status;
+    private String maritalStatus;
 
-    public EmployeeResponse(Employee emp) {
-        this.employeeId = emp.getEmployeeId();
-        this.fullName = new FullNameDto(emp.getFullName().getFirstName(), emp.getFullName().getMiddleName(), emp.getFullName().getLastName());
-        this.email = new EmailDto(emp.getEmail().getValue());
-        this.phoneNumber = new PhoneNumberDto(emp.getPhoneNumber().getCountryCode(), emp.getPhoneNumber().getPhoneNumber());
-        this.dateOfBirth = emp.getDateOfBirth();
-        this.hireDate = emp.getHireDate();
-        this.gender = emp.getGender().name();
-        this.sex = emp.getSex().name();
-        this.salary = new SalaryDto(emp.getSalary().getAmount(), "USD"); // default currency
-        this.status = emp.getStatus().name();
+    public EmployeeResponse(Employee employee) {
+        this.id = employee.getId();
+        this.employeeId = employee.getEmployeeId();
+        this.fullName = new FullNameDto(
+            employee.getFullName().getFirstName(),
+            employee.getFullName().getMiddleName(),
+            employee.getFullName().getLastName()
+        );
+        this.email = new EmailDto(employee.getEmail().getValue());
+        this.phoneNumber = new PhoneNumberDto(
+            employee.getPhoneNumber().getCountryCode(),
+            employee.getPhoneNumber().getPhoneNumber()
+        );
+        this.dateOfBirth = employee.getDateOfBirth().toString();
+        this.hireDate = employee.getHireDate().toString();
+        this.gender = employee.getGender().name();
+        this.sex = employee.getSex().name();
+        this.salary = new SalaryDto(
+            employee.getSalary().getAmount(),
+            "USD"
+        );
+        this.status = employee.getStatus().name();
+        this.maritalStatus = employee.getMaritalStatus() != null ? employee.getMaritalStatus().name() : null;
     }
 
     public static class FullNameDto {
@@ -58,14 +72,16 @@ public class EmployeeResponse {
     }
 
     // Getters
+    public Long getId() { return id; }
     public String getEmployeeId() { return employeeId; }
     public FullNameDto getFullName() { return fullName; }
     public EmailDto getEmail() { return email; }
     public PhoneNumberDto getPhoneNumber() { return phoneNumber; }
-    public LocalDate getDateOfBirth() { return dateOfBirth; }
-    public LocalDate getHireDate() { return hireDate; }
+    public String getDateOfBirth() { return dateOfBirth; }
+    public String getHireDate() { return hireDate; }
     public String getGender() { return gender; }
     public String getSex() { return sex; }
     public SalaryDto getSalary() { return salary; }
     public String getStatus() { return status; }
+    public String getMaritalStatus() { return maritalStatus; }
 }

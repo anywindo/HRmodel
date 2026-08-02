@@ -22,6 +22,7 @@ public class EmployeeRequest {
     private BigDecimal salaryAmount;
     private String salaryCurrency; // Unused in backend currently but accepted
     private String status;
+    private String maritalStatus;
 
     // Getters and Setters
     public String getFirstName() { return firstName; }
@@ -50,4 +51,6 @@ public class EmployeeRequest {
     public void setSalaryCurrency(String salaryCurrency) { this.salaryCurrency = salaryCurrency; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+    public String getMaritalStatus() { return maritalStatus; }
+    public void setMaritalStatus(String maritalStatus) { this.maritalStatus = maritalStatus; }
 }

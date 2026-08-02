@@ -42,12 +42,13 @@ public class EmployeeService {
         
         Gender gender = Gender.valueOf(request.getGender().toUpperCase());
         Sex sex = Sex.valueOf(request.getSex().toUpperCase());
+        MaritalStatus maritalStatus = request.getMaritalStatus() != null ? MaritalStatus.valueOf(request.getMaritalStatus().toUpperCase()) : MaritalStatus.PREFER_NOT_TO_SAY;
 
         // Validate via static factory in Domain Model
         Employee newEmployee = Employee.create(
                 fullName, email, phone, 
                 request.getDateOfBirth(), request.getHireDate(), 
-                gender, sex, salary
+                gender, sex, salary, maritalStatus
         );
 
         Employee saved = employeeRepository.save(newEmployee);
@@ -83,6 +84,7 @@ public class EmployeeService {
         Gender gender = request.getGender() != null ? Gender.valueOf(request.getGender().toUpperCase()) : null;
         Sex sex = request.getSex() != null ? Sex.valueOf(request.getSex().toUpperCase()) : null;
         EmployeeStatus status = request.getStatus() != null ? EmployeeStatus.valueOf(request.getStatus().toUpperCase()) : null;
+        MaritalStatus maritalStatus = request.getMaritalStatus() != null ? MaritalStatus.valueOf(request.getMaritalStatus().toUpperCase()) : null;
 
         employee.updateDetails(
             fullName, 
@@ -91,7 +93,8 @@ public class EmployeeService {
             sex, 
             status, 
             request.getDateOfBirth(), 
-            request.getHireDate()
+            request.getHireDate(),
+            maritalStatus
         );
 
         return new EmployeeResponse(employeeRepository.save(employee));

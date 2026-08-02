@@ -46,12 +46,16 @@ public class Employee {
     @Column(nullable = false)
     private EmployeeStatus status;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private MaritalStatus maritalStatus;
+
     // JPA requires a no-arg constructor
     protected Employee() {}
 
     // Private constructor for Domain logic
     private Employee(String employeeId, FullName fullName, Email email, PhoneNumber phoneNumber,
-                     LocalDate dateOfBirth, LocalDate hireDate, Gender gender, Sex sex, Salary salary) {
+                     LocalDate dateOfBirth, LocalDate hireDate, Gender gender, Sex sex, Salary salary, MaritalStatus maritalStatus) {
         
         validateAge(dateOfBirth, hireDate);
         
@@ -64,13 +68,14 @@ public class Employee {
         this.gender = gender;
         this.sex = sex;
         this.salary = salary;
+        this.maritalStatus = maritalStatus != null ? maritalStatus : MaritalStatus.PREFER_NOT_TO_SAY;
         this.status = EmployeeStatus.ACTIVE;
     }
 
     public static Employee create(FullName fullName, Email email, PhoneNumber phoneNumber,
-                                  LocalDate dateOfBirth, LocalDate hireDate, Gender gender, Sex sex, Salary salary) {
+                                  LocalDate dateOfBirth, LocalDate hireDate, Gender gender, Sex sex, Salary salary, MaritalStatus maritalStatus) {
         String generatedEmployeeId = "EMP-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-        return new Employee(generatedEmployeeId, fullName, email, phoneNumber, dateOfBirth, hireDate, gender, sex, salary);
+        return new Employee(generatedEmployeeId, fullName, email, phoneNumber, dateOfBirth, hireDate, gender, sex, salary, maritalStatus);
     }
 
     private void validateAge(LocalDate dateOfBirth, LocalDate hireDate) {
@@ -98,7 +103,7 @@ public class Employee {
         this.salary = newSalary;
     }
     
-    public void updateDetails(FullName newName, PhoneNumber newPhone, Gender newGender, Sex newSex, EmployeeStatus newStatus, LocalDate newDob, LocalDate newHireDate) {
+    public void updateDetails(FullName newName, PhoneNumber newPhone, Gender newGender, Sex newSex, EmployeeStatus newStatus, LocalDate newDob, LocalDate newHireDate, MaritalStatus newMaritalStatus) {
         if (newDob != null && newHireDate != null) {
             validateAge(newDob, newHireDate);
             this.dateOfBirth = newDob;
@@ -116,6 +121,7 @@ public class Employee {
         if (newGender != null) this.gender = newGender;
         if (newSex != null) this.sex = newSex;
         if (newStatus != null) this.status = newStatus;
+        if (newMaritalStatus != null) this.maritalStatus = newMaritalStatus;
     }
 
     public void terminate() {
@@ -144,4 +150,5 @@ public class Employee {
     public Sex getSex() { return sex; }
     public Salary getSalary() { return salary; }
     public EmployeeStatus getStatus() { return status; }
+    public MaritalStatus getMaritalStatus() { return maritalStatus; }
 }
