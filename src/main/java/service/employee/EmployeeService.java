@@ -30,6 +30,12 @@ public class EmployeeService {
                 .collect(Collectors.toList());
     }
 
+    public List<EmployeeResponse> getEmployeesByDepartmentId(String departmentId) {
+        return employeeRepository.findByDepartment_DepartmentIdValue(departmentId.toUpperCase()).stream()
+                .map(EmployeeResponse::new)
+                .collect(Collectors.toList());
+    }
+
     @Transactional(readOnly = true)
     public EmployeeResponse getEmployeeById(String employeeId) {
         Employee employee = employeeRepository.findByEmployeeId(employeeId)

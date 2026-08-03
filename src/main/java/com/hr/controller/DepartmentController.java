@@ -5,6 +5,8 @@ import com.hr.dto.DepartmentResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import service.department.DepartmentService;
+import service.employee.EmployeeService;
+import com.hr.dto.EmployeeResponse;
 
 import java.util.List;
 
@@ -14,9 +16,11 @@ import java.util.List;
 public class DepartmentController {
 
     private final DepartmentService departmentService;
+    private final EmployeeService employeeService;
 
-    public DepartmentController(DepartmentService departmentService) {
+    public DepartmentController(DepartmentService departmentService, EmployeeService employeeService) {
         this.departmentService = departmentService;
+        this.employeeService = employeeService;
     }
 
     @GetMapping
@@ -27,6 +31,11 @@ public class DepartmentController {
     @GetMapping("/{id}")
     public DepartmentResponse getDepartmentById(@PathVariable String id) {
         return departmentService.getDepartmentById(id);
+    }
+
+    @GetMapping("/{id}/employees")
+    public List<EmployeeResponse> getEmployeesByDepartmentId(@PathVariable String id) {
+        return employeeService.getEmployeesByDepartmentId(id);
     }
 
     @PostMapping
