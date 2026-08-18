@@ -7,6 +7,8 @@ import model.department.DepartmentId;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import repository.department.DepartmentRepository;
+import repository.position.PositionRepository;
+import model.position.Position;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -16,9 +18,11 @@ import java.util.stream.Collectors;
 public class DepartmentService {
 
     private final DepartmentRepository departmentRepository;
+    private final PositionRepository positionRepository;
 
-    public DepartmentService(DepartmentRepository departmentRepository) {
+    public DepartmentService(DepartmentRepository departmentRepository, PositionRepository positionRepository) {
         this.departmentRepository = departmentRepository;
+        this.positionRepository = positionRepository;
     }
 
     public List<DepartmentResponse> getAllDepartments() {
@@ -36,17 +40,31 @@ public class DepartmentService {
         if (departmentRepository.findByDepartmentIdValue(request.getDepartmentId().toUpperCase()).isPresent()) {
             throw new IllegalArgumentException("Department ID already exists");
         }
+        Position headPosition = null;
+        if (request.getHeadPositionId() != null && !request.getHeadPositionId().isBlank()) {
+            headPosition = positionRepository.findByPositionId(new model.position.PositionId(request.getHeadPositionId().toUpperCase()))
+                    .orElseThrow(() -> new IllegalArgumentException("Position not found: " + request.getHeadPositionId()));
+        }
+
         Department department = new Department(
                 new DepartmentId(request.getDepartmentId()),
                 request.getName(),
-                request.getDescription()
+                request.getDescription(),
+                headPosition
         );
         return new DepartmentResponse(departmentRepository.save(department));
     }
 
     public DepartmentResponse updateDepartment(String id, DepartmentRequest request) {
         Department department = findDepartmentEntity(id);
-        department.updateDetails(request.getName(), request.getDescription());
+        
+        Position headPosition = null;
+        if (request.getHeadPositionId() != null && !request.getHeadPositionId().isBlank()) {
+            headPosition = positionRepository.findByPositionId(new model.position.PositionId(request.getHeadPositionId().toUpperCase()))
+                    .orElseThrow(() -> new IllegalArgumentException("Position not found: " + request.getHeadPositionId()));
+        }
+        
+        department.updateDetails(request.getName(), request.getDescription(), headPosition);
         return new DepartmentResponse(departmentRepository.save(department));
     }
 

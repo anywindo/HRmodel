@@ -4,6 +4,7 @@ public class DepartmentRequest {
     private String departmentId;
     private String name;
     private String description;
+    private String headPositionId;
 
     public String getDepartmentId() {
         return departmentId;
@@ -27,5 +28,13 @@ public class DepartmentRequest {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getHeadPositionId() {
+        return headPositionId;
+    }
+
+    public void setHeadPositionId(String headPositionId) {
+        this.headPositionId = headPositionId;
     }
 }

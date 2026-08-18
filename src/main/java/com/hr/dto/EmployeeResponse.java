@@ -20,6 +20,7 @@ public class EmployeeResponse {
     private SalaryDto salary;
     private String status;
     private String maritalStatus;
+    private PositionDto position;
     private DepartmentDto department;
 
     public EmployeeResponse(Employee employee) {
@@ -45,11 +46,17 @@ public class EmployeeResponse {
         );
         this.status = employee.getStatus().name();
         this.maritalStatus = employee.getMaritalStatus() != null ? employee.getMaritalStatus().name() : null;
-        if (employee.getDepartment() != null) {
-            this.department = new DepartmentDto(
-                employee.getDepartment().getDepartmentId().getValue(),
-                employee.getDepartment().getName()
+        if (employee.getPosition() != null) {
+            this.position = new PositionDto(
+                employee.getPosition().getPositionId().getValue(),
+                employee.getPosition().getTitle()
             );
+            if (employee.getPosition().getDepartment() != null) {
+                this.department = new DepartmentDto(
+                    employee.getPosition().getDepartment().getDepartmentId().getValue(),
+                    employee.getPosition().getDepartment().getName()
+                );
+            }
         }
     }
 
@@ -77,6 +84,12 @@ public class EmployeeResponse {
         public SalaryDto(BigDecimal a, String c) { this.amount = a; this.currency = c; }
     }
 
+    public static class PositionDto {
+        public String positionId;
+        public String title;
+        public PositionDto(String id, String t) { this.positionId = id; this.title = t; }
+    }
+
     public static class DepartmentDto {
         public String departmentId;
         public String name;
@@ -96,5 +109,6 @@ public class EmployeeResponse {
     public SalaryDto getSalary() { return salary; }
     public String getStatus() { return status; }
     public String getMaritalStatus() { return maritalStatus; }
+    public PositionDto getPosition() { return position; }
     public DepartmentDto getDepartment() { return department; }
 }

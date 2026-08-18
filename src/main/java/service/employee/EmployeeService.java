@@ -3,10 +3,10 @@ package service.employee;
 import com.hr.dto.EmployeeRequest;
 import com.hr.dto.EmployeeResponse;
 import model.employee.*;
-import model.department.Department;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import repository.department.DepartmentRepository;
+import repository.position.PositionRepository;
 import repository.employee.EmployeeRepository;
 
 import java.util.List;
@@ -16,11 +16,11 @@ import java.util.stream.Collectors;
 public class EmployeeService {
 
     private final EmployeeRepository employeeRepository;
-    private final DepartmentRepository departmentRepository;
+    private final PositionRepository positionRepository;
 
-    public EmployeeService(EmployeeRepository employeeRepository, DepartmentRepository departmentRepository) {
+    public EmployeeService(EmployeeRepository employeeRepository, PositionRepository positionRepository) {
         this.employeeRepository = employeeRepository;
-        this.departmentRepository = departmentRepository;
+        this.positionRepository = positionRepository;
     }
 
     @Transactional(readOnly = true)
@@ -31,7 +31,7 @@ public class EmployeeService {
     }
 
     public List<EmployeeResponse> getEmployeesByDepartmentId(String departmentId) {
-        return employeeRepository.findByDepartment_DepartmentIdValue(departmentId.toUpperCase()).stream()
+        return employeeRepository.findByPosition_Department_DepartmentIdValue(departmentId.toUpperCase()).stream()
                 .map(EmployeeResponse::new)
                 .collect(Collectors.toList());
     }
@@ -55,17 +55,17 @@ public class EmployeeService {
         Sex sex = Sex.valueOf(request.getSex().toUpperCase());
         MaritalStatus maritalStatus = request.getMaritalStatus() != null ? MaritalStatus.valueOf(request.getMaritalStatus().toUpperCase()) : MaritalStatus.PREFER_NOT_TO_SAY;
 
-        Department department = null;
-        if (request.getDepartmentId() != null && !request.getDepartmentId().isBlank()) {
-            department = departmentRepository.findByDepartmentIdValue(request.getDepartmentId().toUpperCase())
-                    .orElseThrow(() -> new IllegalArgumentException("Department not found"));
+        model.position.Position position = null;
+        if (request.getPositionId() != null && !request.getPositionId().isBlank()) {
+            position = positionRepository.findByPositionId(new model.position.PositionId(request.getPositionId().toUpperCase()))
+                    .orElseThrow(() -> new IllegalArgumentException("Position not found"));
         }
 
         // Validate via static factory in Domain Model
         Employee newEmployee = Employee.create(
                 fullName, email, phone, 
                 request.getDateOfBirth(), request.getHireDate(), 
-                gender, sex, salary, maritalStatus, department
+                gender, sex, salary, maritalStatus, position
         );
 
         Employee saved = employeeRepository.save(newEmployee);
@@ -103,10 +103,10 @@ public class EmployeeService {
         EmployeeStatus status = request.getStatus() != null ? EmployeeStatus.valueOf(request.getStatus().toUpperCase()) : null;
         MaritalStatus maritalStatus = request.getMaritalStatus() != null ? MaritalStatus.valueOf(request.getMaritalStatus().toUpperCase()) : null;
 
-        Department department = null;
-        if (request.getDepartmentId() != null && !request.getDepartmentId().isBlank()) {
-            department = departmentRepository.findByDepartmentIdValue(request.getDepartmentId().toUpperCase())
-                    .orElseThrow(() -> new IllegalArgumentException("Department not found"));
+        model.position.Position position = null;
+        if (request.getPositionId() != null && !request.getPositionId().isBlank()) {
+            position = positionRepository.findByPositionId(new model.position.PositionId(request.getPositionId().toUpperCase()))
+                    .orElseThrow(() -> new IllegalArgumentException("Position not found"));
         }
 
         employee.updateDetails(
@@ -118,7 +118,7 @@ public class EmployeeService {
             request.getDateOfBirth(), 
             request.getHireDate(),
             maritalStatus,
-            department
+            position
         );
 
         return new EmployeeResponse(employeeRepository.save(employee));

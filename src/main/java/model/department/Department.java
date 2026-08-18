@@ -21,11 +21,15 @@ public class Department {
     @Column
     private String description;
 
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "head_position_id")
+    private model.position.Position headOfDepartment;
+
     protected Department() {
         // JPA requires default constructor
     }
 
-    public Department(DepartmentId departmentId, String name, String description) {
+    public Department(DepartmentId departmentId, String name, String description, model.position.Position headOfDepartment) {
         if (departmentId == null) {
             throw new IllegalArgumentException("Department ID is required.");
         }
@@ -35,6 +39,7 @@ public class Department {
         this.departmentId = departmentId;
         this.name = name.trim();
         this.description = description != null ? description.trim() : null;
+        this.headOfDepartment = headOfDepartment;
     }
 
     public Long getId() {
@@ -53,12 +58,17 @@ public class Department {
         return description;
     }
 
-    public void updateDetails(String newName, String newDescription) {
+    public model.position.Position getHeadOfDepartment() {
+        return headOfDepartment;
+    }
+
+    public void updateDetails(String newName, String newDescription, model.position.Position newHeadOfDepartment) {
         if (newName == null || newName.isBlank()) {
             throw new IllegalArgumentException("Department name is required.");
         }
         this.name = newName.trim();
         this.description = newDescription != null ? newDescription.trim() : null;
+        this.headOfDepartment = newHeadOfDepartment;
     }
 
     @Override

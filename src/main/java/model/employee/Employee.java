@@ -51,15 +51,15 @@ public class Employee {
     private MaritalStatus maritalStatus;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "department_id")
-    private model.department.Department department;
+    @JoinColumn(name = "position_id")
+    private model.position.Position position;
 
     // JPA requires a no-arg constructor
     protected Employee() {}
 
     // Private constructor for Domain logic
     private Employee(String employeeId, FullName fullName, Email email, PhoneNumber phoneNumber,
-                     LocalDate dateOfBirth, LocalDate hireDate, Gender gender, Sex sex, Salary salary, MaritalStatus maritalStatus, model.department.Department department) {
+                     LocalDate dateOfBirth, LocalDate hireDate, Gender gender, Sex sex, Salary salary, MaritalStatus maritalStatus, model.position.Position position) {
         
         validateAge(dateOfBirth, hireDate);
         
@@ -73,14 +73,14 @@ public class Employee {
         this.sex = sex;
         this.salary = salary;
         this.maritalStatus = maritalStatus != null ? maritalStatus : MaritalStatus.PREFER_NOT_TO_SAY;
-        this.department = department;
+        this.position = position;
         this.status = EmployeeStatus.ACTIVE;
     }
 
     public static Employee create(FullName fullName, Email email, PhoneNumber phoneNumber,
-                                  LocalDate dateOfBirth, LocalDate hireDate, Gender gender, Sex sex, Salary salary, MaritalStatus maritalStatus, model.department.Department department) {
+                                  LocalDate dateOfBirth, LocalDate hireDate, Gender gender, Sex sex, Salary salary, MaritalStatus maritalStatus, model.position.Position position) {
         String generatedEmployeeId = "EMP-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-        return new Employee(generatedEmployeeId, fullName, email, phoneNumber, dateOfBirth, hireDate, gender, sex, salary, maritalStatus, department);
+        return new Employee(generatedEmployeeId, fullName, email, phoneNumber, dateOfBirth, hireDate, gender, sex, salary, maritalStatus, position);
     }
 
     private void validateAge(LocalDate dateOfBirth, LocalDate hireDate) {
@@ -108,7 +108,7 @@ public class Employee {
         this.salary = newSalary;
     }
     
-    public void updateDetails(FullName newName, PhoneNumber newPhone, Gender newGender, Sex newSex, EmployeeStatus newStatus, LocalDate newDob, LocalDate newHireDate, MaritalStatus newMaritalStatus, model.department.Department newDepartment) {
+    public void updateDetails(FullName newName, PhoneNumber newPhone, Gender newGender, Sex newSex, EmployeeStatus newStatus, LocalDate newDob, LocalDate newHireDate, MaritalStatus newMaritalStatus, model.position.Position newPosition) {
         if (newDob != null && newHireDate != null) {
             validateAge(newDob, newHireDate);
             this.dateOfBirth = newDob;
@@ -127,7 +127,7 @@ public class Employee {
         if (newSex != null) this.sex = newSex;
         if (newStatus != null) this.status = newStatus;
         if (newMaritalStatus != null) this.maritalStatus = newMaritalStatus;
-        if (newDepartment != null) this.department = newDepartment;
+        if (newPosition != null) this.position = newPosition;
     }
 
     public void terminate() {
@@ -157,5 +157,5 @@ public class Employee {
     public Salary getSalary() { return salary; }
     public EmployeeStatus getStatus() { return status; }
     public MaritalStatus getMaritalStatus() { return maritalStatus; }
-    public model.department.Department getDepartment() { return department; }
+    public model.position.Position getPosition() { return position; }
 }
