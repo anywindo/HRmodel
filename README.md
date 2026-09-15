@@ -13,45 +13,49 @@ This API manages the core organizational structure of a company, handling entiti
 * **Domain-Driven Design (DDD):** Built with a strong ubiquitous language, bounded contexts, and rich domain models.
 
 ## Tech Stack
-* **Java** (JDK 17+)
-* **Spring Boot** (Web, Data JPA)
+* **Java** 21
+* **Spring Boot** 3.2.4 (Web, Data JPA)
+* **MariaDB** for data persistence
 * **Maven** for dependency management and build automation
 
 ## Project Structure
 
-The codebase is organized to reflect the domain, separating concerns and enforcing architectural boundaries:
+The codebase is organized following DDD patterns:
 
 * **`src/main/java/model/`**: The core domain layer. Contains entities (`Employee`, `Department`, `Position`), value objects, and business rules.
-* **`src/main/java/repository/`**: Data access interfaces.
+* **`src/main/java/repository/`**: Data access interfaces using Spring Data JPA.
 * **`src/main/java/service/`**: Application services coordinating domain objects to execute use cases.
-* **`src/main/java/com/hr/controller/`**: The presentation layer (REST Controllers) exposing the API endpoints.
+* **`src/main/java/com/hr/controller/`**: REST Controllers exposing the API endpoints.
 * **`src/main/java/com/hr/dto/`**: Data Transfer Objects for API requests and responses.
-* **`src/main/java/com/hr/config/`**: Configuration classes (e.g., Data Seeders).
+* **`src/main/java/com/hr/config/`**: Configuration classes (e.g., Data Seeders, CORS).
 
 ## Getting Started
 
 ### Prerequisites
-* Java 17 or higher
+* Java 21
 * Maven 3.6+
-* A database (configured in `application.properties` or `.env`)
+* MariaDB instance
 
 ### Setup and Running
 
-1. **Clone the repository (if applicable)**
-   ```bash
-   git clone <repository-url>
-   cd HRmodel/HR_backend
+1. **Configure the environment**
+   The application uses environment variables for database configuration. You can create a `.env` file in the `HR_backend` directory or set them in your environment:
+
+   ```env
+   DB_HOST=localhost
+   DB_PORT=3306
+   DB_NAME=hr_db
+   DB_USERNAME=root
+   DB_PASSWORD=root
+   FRONTEND_URL=http://localhost:5173
    ```
 
-2. **Configure the environment**
-   Ensure your `.env` file or `src/main/resources/application.properties` has the correct database credentials.
-
-3. **Build the project**
+2. **Build the project**
    ```bash
    mvn clean install
    ```
 
-4. **Run the application**
+3. **Run the application**
    ```bash
    mvn spring-boot:run
    ```
