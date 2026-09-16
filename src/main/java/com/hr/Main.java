@@ -6,7 +6,7 @@ import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import de.codecentric.boot.admin.server.config.EnableAdminServer;
 
-@SpringBootApplication(scanBasePackages = {"com.hr", "model", "repository", "service"})
+@SpringBootApplication(scanBasePackages = {"com.hr", "model", "repository", "service", "security"})
 @EnableAdminServer
 @EntityScan(basePackages = {"model"})
 @EnableJpaRepositories(basePackages = {"repository"})

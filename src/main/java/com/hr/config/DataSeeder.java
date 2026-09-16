@@ -14,6 +14,13 @@ import repository.company.CompanyProfileRepository;
 import repository.department.DepartmentRepository;
 import repository.employee.EmployeeRepository;
 import repository.position.PositionRepository;
+import repository.auth.UserRepository;
+import repository.auth.RoleRepository;
+import repository.auth.PermissionRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import model.auth.User;
+import model.auth.Role;
+import model.auth.Permission;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -29,12 +36,20 @@ public class DataSeeder implements CommandLineRunner {
     private final PositionRepository positionRepository;
     private final EmployeeRepository employeeRepository;
     private final CompanyProfileRepository companyProfileRepository;
+    private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final PermissionRepository permissionRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public DataSeeder(DepartmentRepository departmentRepository, PositionRepository positionRepository, EmployeeRepository employeeRepository, CompanyProfileRepository companyProfileRepository) {
+    public DataSeeder(DepartmentRepository departmentRepository, PositionRepository positionRepository, EmployeeRepository employeeRepository, CompanyProfileRepository companyProfileRepository, UserRepository userRepository, RoleRepository roleRepository, PermissionRepository permissionRepository, PasswordEncoder passwordEncoder) {
         this.departmentRepository = departmentRepository;
         this.positionRepository = positionRepository;
         this.employeeRepository = employeeRepository;
         this.companyProfileRepository = companyProfileRepository;
+        this.userRepository = userRepository;
+        this.roleRepository = roleRepository;
+        this.permissionRepository = permissionRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -46,6 +61,7 @@ public class DataSeeder implements CommandLineRunner {
         if (employeeRepository.count() == 0) {
             seedData();
         }
+        seedAuthData();
     }
 
     private void seedCompanyProfile() {
@@ -158,6 +174,54 @@ public class DataSeeder implements CommandLineRunner {
         employeeRepository.saveAll(employees);
 
         System.out.println("Enhanced diverse dummy data seeded successfully with " + employees.size() + " employees across 6 departments and 16 positions!");
+    }
+
+    private void seedAuthData() {
+        // Seed default permissions
+        List<String> defaultPermissions = java.util.Arrays.asList(
+                "employee:view", "employee:create", "employee:edit", "employee:delete",
+                "department:view", "department:create", "department:edit", "department:delete",
+                "position:view", "position:create", "position:edit", "position:delete",
+                "company_profile:view", "company_profile:edit"
+        );
+
+        for (String permName : defaultPermissions) {
+            if (permissionRepository.findByName(permName).isEmpty()) {
+                permissionRepository.save(new Permission(permName));
+            }
+        }
+
+        // Seed SUPER_ADMIN role
+        Role superAdminRole = roleRepository.findByName("SUPER_ADMIN").orElseGet(() -> {
+            Role role = new Role();
+            role.setName("SUPER_ADMIN");
+            role.setDescription("Super Administrator with full access");
+            return roleRepository.save(role);
+        });
+
+        // Assign all permissions to SUPER_ADMIN
+        boolean roleUpdated = false;
+        List<Permission> allPermissions = permissionRepository.findAll();
+        for (Permission perm : allPermissions) {
+            if (!superAdminRole.getPermissions().contains(perm)) {
+                superAdminRole.getPermissions().add(perm);
+                roleUpdated = true;
+            }
+        }
+        if (roleUpdated) {
+            roleRepository.save(superAdminRole);
+        }
+
+        // Seed admin user
+        if (userRepository.findByEmail("admin@company.com").isEmpty()) {
+            User admin = new User();
+            admin.setEmail("admin@company.com");
+            admin.setPasswordHash(passwordEncoder.encode("admin123"));
+            admin.setActive(true);
+            admin.getRoles().add(superAdminRole);
+            userRepository.save(admin);
+            System.out.println("Admin user seeded: admin@company.com / admin123");
+        }
     }
 
     private Employee createEmp(String firstName, String middleName, String lastName,
