@@ -9,6 +9,8 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import model.company.*;
+import repository.company.CompanyProfileRepository;
 import repository.department.DepartmentRepository;
 import repository.employee.EmployeeRepository;
 import repository.position.PositionRepository;
@@ -26,19 +28,47 @@ public class DataSeeder implements CommandLineRunner {
     private final DepartmentRepository departmentRepository;
     private final PositionRepository positionRepository;
     private final EmployeeRepository employeeRepository;
+    private final CompanyProfileRepository companyProfileRepository;
 
-    public DataSeeder(DepartmentRepository departmentRepository, PositionRepository positionRepository, EmployeeRepository employeeRepository) {
+    public DataSeeder(DepartmentRepository departmentRepository, PositionRepository positionRepository, EmployeeRepository employeeRepository, CompanyProfileRepository companyProfileRepository) {
         this.departmentRepository = departmentRepository;
         this.positionRepository = positionRepository;
         this.employeeRepository = employeeRepository;
+        this.companyProfileRepository = companyProfileRepository;
     }
 
     @Override
     @Transactional
     public void run(String... args) throws Exception {
+        if (companyProfileRepository.count() == 0) {
+            seedCompanyProfile();
+        }
         if (employeeRepository.count() == 0) {
             seedData();
         }
+    }
+
+    private void seedCompanyProfile() {
+        Address address = new Address(
+                "100 Innovation Way, Suite 500",
+                "San Francisco",
+                "CA",
+                "94105",
+                "USA"
+        );
+        CompanyDetail detail = new CompanyDetail(
+                "https://via.placeholder.com/150?text=TechCorp+Logo",
+                "TechCorp Solutions Inc.",
+                address
+        );
+        CompanyContact contact = new CompanyContact(
+                new PhoneNumber("5550199", "+1"),
+                new PhoneNumber("5550198", "+1"),
+                new Email("contact@techcorp.com")
+        );
+        CompanyProfile profile = CompanyProfile.create("COMP-001", detail, contact);
+        companyProfileRepository.save(profile);
+        System.out.println("Company profile seeded successfully!");
     }
 
     private void seedData() {
