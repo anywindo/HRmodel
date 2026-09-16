@@ -29,6 +29,29 @@ public class CompanyProfileController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @PostMapping("/logo")
+    public ResponseEntity<java.util.Map<String, String>> uploadLogo(@RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+        if (file.isEmpty()) {
+            return ResponseEntity.badRequest().body(java.util.Map.of("error", "File is empty"));
+        }
+        try {
+            String originalName = file.getOriginalFilename() != null ? file.getOriginalFilename() : "logo.png";
+            String filename = "logo_" + System.currentTimeMillis() + "_" + originalName.replaceAll("[^a-zA-Z0-9._-]", "_");
+            java.nio.file.Path uploadPath = java.nio.file.Paths.get("uploads");
+            if (!java.nio.file.Files.exists(uploadPath)) {
+                java.nio.file.Files.createDirectories(uploadPath);
+            }
+            java.nio.file.Path filePath = uploadPath.resolve(filename);
+            java.nio.file.Files.copy(file.getInputStream(), filePath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+
+            String logoUrl = "http://localhost:8080/uploads/" + filename;
+            return ResponseEntity.ok(java.util.Map.of("logoUrl", logoUrl));
+        } catch (java.io.IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(java.util.Map.of("error", "Failed to upload file: " + e.getMessage()));
+        }
+    }
+
     public record UpdateCompanyProfileRequest(
             String logoUrl,
             String companyName,
