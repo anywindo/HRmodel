@@ -52,6 +52,11 @@ public class CompanyProfileController {
         }
     }
 
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    public ResponseEntity<java.util.Map<String, String>> handleMaxSizeException(org.springframework.web.multipart.MaxUploadSizeExceededException exc) {
+        return ResponseEntity.badRequest().body(java.util.Map.of("error", "File size exceeds maximum limit of 10MB."));
+    }
+
     public record UpdateCompanyProfileRequest(
             String logoUrl,
             String companyName,
