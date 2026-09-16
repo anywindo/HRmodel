@@ -1,6 +1,5 @@
 package model.company;
 
-import jakarta.persistence.Column;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -17,9 +16,6 @@ public class CompanyProfile {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "profile_id", nullable = false, unique = true)
-    private String profileId;
-
     @Embedded
     private CompanyDetail detail;
 
@@ -28,10 +24,7 @@ public class CompanyProfile {
 
     protected CompanyProfile() {}
 
-    private CompanyProfile(String profileId, CompanyDetail detail, CompanyContact contact) {
-        if (profileId == null || profileId.isBlank()) {
-            throw new IllegalArgumentException("Profile ID is required.");
-        }
+    private CompanyProfile(CompanyDetail detail, CompanyContact contact) {
         if (detail == null) {
             throw new IllegalArgumentException("Company detail is required.");
         }
@@ -39,13 +32,12 @@ public class CompanyProfile {
             throw new IllegalArgumentException("Company contact is required.");
         }
 
-        this.profileId = profileId.trim();
         this.detail = detail;
         this.contact = contact;
     }
 
-    public static CompanyProfile create(String profileId, CompanyDetail detail, CompanyContact contact) {
-        return new CompanyProfile(profileId, detail, contact);
+    public static CompanyProfile create(CompanyDetail detail, CompanyContact contact) {
+        return new CompanyProfile(detail, contact);
     }
 
     public void updateDetail(CompanyDetail detail) {
@@ -66,10 +58,6 @@ public class CompanyProfile {
         return id;
     }
 
-    public String getProfileId() {
-        return profileId;
-    }
-
     public CompanyDetail getDetail() {
         return detail;
     }
@@ -82,11 +70,11 @@ public class CompanyProfile {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof CompanyProfile that)) return false;
-        return Objects.equals(profileId, that.profileId);
+        return Objects.equals(id, that.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(profileId);
+        return Objects.hash(id);
     }
 }

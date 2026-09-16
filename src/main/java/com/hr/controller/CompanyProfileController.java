@@ -86,7 +86,7 @@ public class CompanyProfileController {
         CompanyContact contact = new CompanyContact(phone, fax, email);
 
         CompanyProfile profile = repository.findFirstByOrderByIdAsc().orElseGet(() ->
-                CompanyProfile.create("COMP-001", detail, contact)
+                CompanyProfile.create(detail, contact)
         );
 
         profile.updateDetail(detail);

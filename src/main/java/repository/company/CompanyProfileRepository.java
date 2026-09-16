@@ -8,5 +8,4 @@ import java.util.Optional;
 @Repository
 public interface CompanyProfileRepository extends JpaRepository<CompanyProfile, Long> {
     Optional<CompanyProfile> findFirstByOrderByIdAsc();
-    Optional<CompanyProfile> findByProfileId(String profileId);
 }

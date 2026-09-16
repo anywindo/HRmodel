@@ -66,7 +66,7 @@ public class DataSeeder implements CommandLineRunner {
                 new PhoneNumber("5550198", "+1"),
                 new Email("contact@techcorp.com")
         );
-        CompanyProfile profile = CompanyProfile.create("COMP-001", detail, contact);
+        CompanyProfile profile = CompanyProfile.create(detail, contact);
         companyProfileRepository.save(profile);
         System.out.println("Company profile seeded successfully!");
     }
