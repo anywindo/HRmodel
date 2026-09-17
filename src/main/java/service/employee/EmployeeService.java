@@ -7,15 +7,26 @@ import model.position.Position;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import repository.position.PositionRepository;
 import repository.employee.EmployeeRepository;
-import repository.auth.UserRepository;
-import model.auth.User;
+import repository.auth.RoleRepository;
 import model.leave.EmployeeLeaveBalance;
 import repository.leave.EmployeeLeaveBalanceRepository;
+import model.leave.LeaveDelegation;
+import repository.leave.LeaveDelegationRepository;
+import java.time.LocalDate;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
+import java.util.Set;
+
+import service.notification.NotificationService;
+import model.notification.NotificationType;
+import service.email.EmailService;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -25,26 +36,38 @@ public class EmployeeService {
 
     private final EmployeeRepository employeeRepository;
     private final PositionRepository positionRepository;
-    private final UserRepository userRepository;
     private final EmployeeLeaveBalanceRepository balanceRepository;
+    private final RoleRepository roleRepository;
+    private final LeaveDelegationRepository leaveDelegationRepository;
+    private final NotificationService notificationService;
+    private final EmailService emailService;
+    private final PasswordEncoder passwordEncoder;
 
-    public EmployeeService(EmployeeRepository employeeRepository, PositionRepository positionRepository, UserRepository userRepository, EmployeeLeaveBalanceRepository balanceRepository) {
+    public EmployeeService(EmployeeRepository employeeRepository, PositionRepository positionRepository, EmployeeLeaveBalanceRepository balanceRepository, RoleRepository roleRepository, LeaveDelegationRepository leaveDelegationRepository, NotificationService notificationService, EmailService emailService, PasswordEncoder passwordEncoder) {
         this.employeeRepository = employeeRepository;
         this.positionRepository = positionRepository;
-        this.userRepository = userRepository;
         this.balanceRepository = balanceRepository;
+        this.roleRepository = roleRepository;
+        this.leaveDelegationRepository = leaveDelegationRepository;
+        this.notificationService = notificationService;
+        this.emailService = emailService;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Transactional(readOnly = true)
     public List<EmployeeResponse> getAllEmployees() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         boolean canSeeAll = auth != null && auth.getAuthorities().stream().anyMatch(a -> 
-            a.getAuthority().equals("ROLE_SUPER_ADMIN") || a.getAuthority().equals("ROLE_HR"));
+            a.getAuthority().equals("ROLE_SUPER_ADMIN") || a.getAuthority().equals("ROLE_HR") || a.getAuthority().equals("ROLE_EXECUTIVE"));
         
         List<Employee> allEmployees = employeeRepository.findAll();
         
+        List<LeaveDelegation> activeDelegations = leaveDelegationRepository.findAllActiveDelegations(LocalDate.now());
+        Set<String> delegatorIds = activeDelegations.stream().map(d -> d.getDelegator().getEmployeeId()).collect(Collectors.toSet());
+        Set<String> delegateeIds = activeDelegations.stream().map(d -> d.getDelegatee().getEmployeeId()).collect(Collectors.toSet());
+
         if (canSeeAll) {
-            return allEmployees.stream().map(e -> new EmployeeResponse(e, allEmployees)).collect(Collectors.toList());
+            return allEmployees.stream().map(e -> new EmployeeResponse(e, allEmployees, delegatorIds.contains(e.getEmployeeId()), delegateeIds.contains(e.getEmployeeId()))).collect(Collectors.toList());
         }
         
         if (auth == null || !auth.isAuthenticated() || auth.getPrincipal().equals("anonymousUser")) {
@@ -52,8 +75,7 @@ public class EmployeeService {
         }
         
         UserDetails userDetails = (UserDetails) auth.getPrincipal();
-        User currentUser = userRepository.findByEmail(userDetails.getUsername()).orElse(null);
-        Employee myEmp = currentUser != null ? currentUser.getEmployee() : null;
+        Employee myEmp = employeeRepository.findByEmail_Value(userDetails.getUsername()).orElse(null);
                 
         if (myEmp == null) {
             return List.of();
@@ -77,20 +99,30 @@ public class EmployeeService {
             }
             return false;
         }).collect(Collectors.toList());
-        return filtered.stream().map(e -> new EmployeeResponse(e, allEmployees)).collect(Collectors.toList());
+        return filtered.stream().map(e -> new EmployeeResponse(e, allEmployees, delegatorIds.contains(e.getEmployeeId()), delegateeIds.contains(e.getEmployeeId()))).collect(Collectors.toList());
     }
 
     public List<EmployeeResponse> getEmployeesByDepartmentId(String departmentId) {
-        return employeeRepository.findByPosition_Department_DepartmentIdValue(departmentId.toUpperCase()).stream()
-                .map(EmployeeResponse::new)
-                .collect(Collectors.toList());
+        List<Employee> allEmployees = employeeRepository.findAll();
+        List<Employee> filtered = employeeRepository.findByPosition_Department_DepartmentIdValue(departmentId.toUpperCase());
+        
+        List<LeaveDelegation> activeDelegations = leaveDelegationRepository.findAllActiveDelegations(LocalDate.now());
+        Set<String> delegatorIds = activeDelegations.stream().map(d -> d.getDelegator().getEmployeeId()).collect(Collectors.toSet());
+        Set<String> delegateeIds = activeDelegations.stream().map(d -> d.getDelegatee().getEmployeeId()).collect(Collectors.toSet());
+
+        return filtered.stream().map(e -> new EmployeeResponse(e, allEmployees, delegatorIds.contains(e.getEmployeeId()), delegateeIds.contains(e.getEmployeeId()))).collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
     public EmployeeResponse getEmployeeById(String employeeId) {
         Employee employee = employeeRepository.findByEmployeeId(employeeId)
                 .orElseThrow(() -> new IllegalArgumentException("Employee not found"));
-        return new EmployeeResponse(employee);
+
+        List<LeaveDelegation> activeDelegations = leaveDelegationRepository.findAllActiveDelegations(LocalDate.now());
+        Set<String> delegatorIds = activeDelegations.stream().map(d -> d.getDelegator().getEmployeeId()).collect(Collectors.toSet());
+        Set<String> delegateeIds = activeDelegations.stream().map(d -> d.getDelegatee().getEmployeeId()).collect(Collectors.toSet());
+
+        return new EmployeeResponse(employee, employeeRepository.findAll(), delegatorIds.contains(employee.getEmployeeId()), delegateeIds.contains(employee.getEmployeeId()));
     }
 
     @Transactional
@@ -118,13 +150,48 @@ public class EmployeeService {
                 gender, sex, salary, maritalStatus, position
         );
 
+        // Auto-assign role and default password
+        model.auth.Role standardRole = roleRepository.findByName("STANDARD_USER")
+                .orElseGet(() -> roleRepository.findByName("USER").orElse(null));
+        if (standardRole != null) {
+            newEmployee.getRoles().add(standardRole);
+        }
+        
+        // Use a default hashed password for newly created employees (DOB in DDMMYYYY format)
+        java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("ddMMyyyy");
+        String defaultPassword = newEmployee.getDateOfBirth().format(formatter);
+        newEmployee.setPasswordHash(passwordEncoder.encode(defaultPassword));
+
         Employee saved = employeeRepository.save(newEmployee);
         
         // Initialize leave balance
         EmployeeLeaveBalance initialBalance = new EmployeeLeaveBalance(saved, 12, 14);
         balanceRepository.save(initialBalance);
         
-        return new EmployeeResponse(saved);
+        String token = "auto-activated";
+
+        // Notify HR and SuperAdmin about onboarding
+        String posTitle = position != null ? position.getTitle() : "Unassigned";
+        String deptTitle = (position != null && position.getDepartment() != null) ? " in " + position.getDepartment().getName() : "";
+        String onboardMsg = "New employee " + saved.getFullName().getFirstName() + " " + saved.getFullName().getLastName() + " has been onboarded (" + posTitle + deptTitle + ").";
+        notificationService.notifyRole("HR", onboardMsg, NotificationType.EMPLOYEE_ONBOARDED, saved.getEmployeeId(), "/employees");
+        notificationService.notifyRole("SUPER_ADMIN", onboardMsg, NotificationType.EMPLOYEE_ONBOARDED, saved.getEmployeeId(), "/employees");
+
+        // Notify reporting manager if any
+        if (position != null && position.getReportsTo() != null) {
+            String mgrPosId = position.getReportsTo().getPositionId().getValue();
+            employeeRepository.findByPosition_PositionId_Value(mgrPosId).forEach(mgr -> {
+                notificationService.createNotification(
+                    mgr.getEmployeeId(),
+                    "New team member " + saved.getFullName().getFirstName() + " " + saved.getFullName().getLastName() + " has joined your team as " + posTitle + ".",
+                    NotificationType.EMPLOYEE_ONBOARDED,
+                    saved.getEmployeeId(),
+                    "/employees"
+                );
+            });
+        }
+        
+        return new EmployeeResponse(saved, token);
     }
 
     @Transactional
@@ -164,6 +231,8 @@ public class EmployeeService {
                     .orElseThrow(() -> new IllegalArgumentException("Position not found"));
         }
 
+        boolean posChanged = position != null && (employee.getPosition() == null || !employee.getPosition().getPositionId().equals(position.getPositionId()));
+
         employee.updateDetails(
             fullName, 
             phone, 
@@ -176,19 +245,89 @@ public class EmployeeService {
             position
         );
 
-        return new EmployeeResponse(employeeRepository.save(employee));
+        Employee saved = employeeRepository.save(employee);
+
+        // User active status is now driven solely by EmployeeStatus, so no separate User update is needed.
+
+        // Notify employee about profile update
+        notificationService.createNotification(
+            saved.getEmployeeId(),
+            "Your employee profile details have been updated by HR.",
+            NotificationType.EMPLOYEE_PROFILE_UPDATED,
+            saved.getEmployeeId(),
+            "/profile"
+        );
+
+        if (posChanged) {
+            String deptSuffix = (position.getDepartment() != null) ? " in " + position.getDepartment().getName() : "";
+            notificationService.createNotification(
+                saved.getEmployeeId(),
+                "Your job assignment has been updated to: " + position.getTitle() + deptSuffix + ".",
+                NotificationType.POSITION_ASSIGNED,
+                position.getPositionId().getValue(),
+                "/profile"
+            );
+        }
+
+        return new EmployeeResponse(saved);
     }
 
     @Transactional
-    public void deleteEmployee(String employeeId) {
+    public void changeEmployeeStatus(String employeeId, String statusString, String reason) {
         Employee employee = employeeRepository.findByEmployeeId(employeeId)
                 .orElseThrow(() -> new IllegalArgumentException("Employee not found"));
         
-        if (employee.getStatus() == EmployeeStatus.TERMINATED) {
-            throw new IllegalStateException("Employee is already terminated");
-        }
+        EmployeeStatus newStatus = EmployeeStatus.fromString(statusString);
         
-        employee.terminate();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && !auth.getPrincipal().equals("anonymousUser")) {
+            UserDetails userDetails = (UserDetails) auth.getPrincipal();
+            if (employee.getEmail().getValue().equals(userDetails.getUsername()) && newStatus == EmployeeStatus.TERMINATED) {
+                throw new IllegalStateException("You cannot terminate your own account");
+            }
+        }
+
+        if (reason == null || reason.trim().isEmpty()) {
+            throw new IllegalArgumentException("A reason is required for status changes");
+        }
+
+        employee.changeStatus(newStatus);
         employeeRepository.save(employee);
+
+        String termMsg = "Employee " + employee.getFullName().getFirstName() + " " + employee.getFullName().getLastName() + " status has been changed to " + newStatus.getDisplayName() + ".";
+        notificationService.notifyRole("HR", termMsg, NotificationType.EMPLOYEE_STATUS_CHANGED, employee.getEmployeeId(), "/employees");
+        
+        String emailSubject;
+        String actionText;
+        switch (newStatus) {
+            case TERMINATED -> {
+                emailSubject = "Notice of Employment Termination";
+                actionText = "formally notify you that your employment has been terminated";
+            }
+            case SUSPENDED -> {
+                emailSubject = "Notice of Suspension";
+                actionText = "formally notify you that you have been suspended";
+            }
+            case RESIGNED -> {
+                emailSubject = "Acceptance of Resignation";
+                actionText = "acknowledge and accept your resignation";
+            }
+            case RETIRED -> {
+                emailSubject = "Notice of Retirement";
+                actionText = "confirm your retirement";
+            }
+            default -> {
+                emailSubject = "Notice of Status Change";
+                actionText = "notify you that your employment status has been changed to " + newStatus.getDisplayName();
+            }
+        }
+
+        // Send email to the employee
+        String emailBody = "Dear " + employee.getFullName().getFirstName() + ",\n\n" +
+                "This email is to " + actionText + ".\n\n" +
+                "Reason provided:\n" + reason + "\n\n" +
+                "Please contact HR if you have any questions.\n\n" +
+                "Sincerely,\nHuman Resources";
+        emailService.sendEmail(employee.getEmail().getValue(), emailSubject, emailBody);
     }
 }

@@ -11,4 +11,5 @@ import java.util.Optional;
 public interface PositionRepository extends JpaRepository<Position, Long> {
     Optional<Position> findByPositionId(PositionId positionId);
     boolean existsByPositionId(PositionId positionId);
+    boolean existsByReportsTo_PositionId_Value(String positionIdValue);
 }

@@ -3,7 +3,7 @@ package service.rbac;
 import com.hr.dto.rbac.*;
 import model.auth.Permission;
 import model.auth.Role;
-import model.auth.User;
+
 import model.employee.Employee;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import repository.auth.PermissionRepository;
 import repository.auth.RoleRepository;
-import repository.auth.UserRepository;
 import repository.employee.EmployeeRepository;
 
 import java.util.*;
@@ -25,21 +24,21 @@ public class RbacService {
     private static final Set<String> PROTECTED_USERS = Set.of("suparadmin@company.com");
 
     private final RoleRepository roleRepository;
-    private final UserRepository userRepository;
     private final PermissionRepository permissionRepository;
     private final EmployeeRepository employeeRepository;
     private final PasswordEncoder passwordEncoder;
+    private final service.notification.NotificationService notificationService;
 
     public RbacService(RoleRepository roleRepository,
-                       UserRepository userRepository,
                        PermissionRepository permissionRepository,
                        EmployeeRepository employeeRepository,
-                       PasswordEncoder passwordEncoder) {
+                       PasswordEncoder passwordEncoder,
+                       service.notification.NotificationService notificationService) {
         this.roleRepository = roleRepository;
-        this.userRepository = userRepository;
         this.permissionRepository = permissionRepository;
         this.employeeRepository = employeeRepository;
         this.passwordEncoder = passwordEncoder;
+        this.notificationService = notificationService;
     }
 
     // --- PERMISSIONS ---
@@ -132,9 +131,9 @@ public class RbacService {
             throw new IllegalArgumentException("System role '" + role.getName() + "' cannot be deleted");
         }
 
-        long usersCount = userRepository.countByRoles_Id(id);
+        long usersCount = employeeRepository.countByRoles_Id(id);
         if (usersCount > 0) {
-            throw new IllegalArgumentException("Cannot delete role '" + role.getName() + "' because it is assigned to " + usersCount + " user(s)");
+            throw new IllegalArgumentException("Cannot delete role '" + role.getName() + "' because it is assigned to " + usersCount + " employee(s)");
         }
 
         roleRepository.delete(role);
@@ -143,117 +142,69 @@ public class RbacService {
     // --- USERS ---
     @Transactional(readOnly = true)
     public List<UserResponseDTO> getAllUsers() {
-        return userRepository.findAll().stream()
-                .sorted(Comparator.comparing(User::getId))
+        return employeeRepository.findAll().stream()
+                .sorted(Comparator.comparing(Employee::getId))
                 .map(this::toUserResponseDTO)
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
     public UserResponseDTO getUserById(Long id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + id));
-        return toUserResponseDTO(user);
+        Employee emp = employeeRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Employee not found with id: " + id));
+        return toUserResponseDTO(emp);
     }
 
     @Transactional
     public UserResponseDTO createUser(UserRequestDTO req) {
-        if (req.getEmail() == null || req.getEmail().trim().isEmpty()) {
-            throw new IllegalArgumentException("Email is required");
-        }
-        String cleanEmail = req.getEmail().trim().toLowerCase();
-        if (userRepository.existsByEmail(cleanEmail)) {
-            throw new IllegalArgumentException("User with email '" + cleanEmail + "' already exists");
-        }
-
-        if (req.getPassword() == null || req.getPassword().length() < 6) {
-            throw new IllegalArgumentException("Password must be at least 6 characters");
-        }
-
-        User user = new User();
-        user.setEmail(cleanEmail);
-        user.setPasswordHash(passwordEncoder.encode(req.getPassword()));
-        user.setActive(req.getIsActive() != null ? req.getIsActive() : true);
-
-        if (req.getEmployeeId() != null && !req.getEmployeeId().trim().isEmpty()) {
-            Employee emp = employeeRepository.findByEmployeeId(req.getEmployeeId().trim())
-                    .orElseThrow(() -> new IllegalArgumentException("Employee not found with id: " + req.getEmployeeId()));
-            user.setEmployee(emp);
-        }
-
-        if (req.getRoleIds() != null && !req.getRoleIds().isEmpty()) {
-            Set<Role> roles = new HashSet<>(roleRepository.findAllById(req.getRoleIds()));
-            user.setRoles(roles);
-        }
-
-        User saved = userRepository.save(user);
-        return toUserResponseDTO(saved);
+        throw new UnsupportedOperationException("Users are now created and managed via the Employee management module.");
     }
 
     @Transactional
     public UserResponseDTO updateUser(Long id, UserRequestDTO req) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + id));
+        Employee employee = employeeRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Employee not found with id: " + id));
 
         if (req.getEmail() != null && !req.getEmail().trim().isEmpty()) {
             String cleanEmail = req.getEmail().trim().toLowerCase();
-            if (!cleanEmail.equalsIgnoreCase(user.getEmail()) && userRepository.existsByEmail(cleanEmail)) {
+            if (!cleanEmail.equalsIgnoreCase(employee.getEmail().getValue()) && employeeRepository.findByEmail_Value(cleanEmail).isPresent()) {
                 throw new IllegalArgumentException("Email '" + cleanEmail + "' is already in use");
             }
-            user.setEmail(cleanEmail);
+            employee.changeEmail(new model.employee.Email(cleanEmail));
         }
 
         if (req.getPassword() != null && !req.getPassword().trim().isEmpty()) {
             if (req.getPassword().trim().length() < 6) {
                 throw new IllegalArgumentException("New password must be at least 6 characters");
             }
-            user.setPasswordHash(passwordEncoder.encode(req.getPassword().trim()));
-        }
-
-        if (req.getIsActive() != null) {
-            if (!req.getIsActive() && PROTECTED_USERS.contains(user.getEmail())) {
-                throw new IllegalArgumentException("Primary superadmin account cannot be deactivated");
-            }
-            user.setActive(req.getIsActive());
-        }
-
-        if (req.getEmployeeId() != null) {
-            if (req.getEmployeeId().trim().isEmpty()) {
-                user.setEmployee(null);
-            } else {
-                Employee emp = employeeRepository.findByEmployeeId(req.getEmployeeId().trim())
-                        .orElseThrow(() -> new IllegalArgumentException("Employee not found with id: " + req.getEmployeeId()));
-                user.setEmployee(emp);
-            }
+            employee.setPasswordHash(passwordEncoder.encode(req.getPassword().trim()));
         }
 
         if (req.getRoleIds() != null) {
             Set<Role> roles = new HashSet<>(roleRepository.findAllById(req.getRoleIds()));
-            if (PROTECTED_USERS.contains(user.getEmail())) {
+            if (PROTECTED_USERS.contains(employee.getEmail().getValue())) {
                 roleRepository.findByName("SUPER_ADMIN").ifPresent(roles::add);
             }
-            user.setRoles(roles);
+            employee.setRoles(roles);
         }
 
-        User saved = userRepository.save(user);
+        Employee saved = employeeRepository.save(employee);
+        
+        String roleNames = saved.getRoles().stream().map(Role::getName).collect(Collectors.joining(", "));
+        notificationService.createNotification(
+            saved.getEmployeeId(),
+            "Your system roles have been updated to: " + roleNames + ".",
+            model.notification.NotificationType.ROLE_ASSIGNED,
+            String.valueOf(saved.getId()),
+            "/profile"
+        );
+        
         return toUserResponseDTO(saved);
     }
 
     @Transactional
     public void deleteUser(Long id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + id));
-
-        if (PROTECTED_USERS.contains(user.getEmail())) {
-            throw new IllegalArgumentException("Primary superadmin account cannot be deleted");
-        }
-
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && user.getEmail().equalsIgnoreCase(auth.getName())) {
-            throw new IllegalArgumentException("You cannot delete your own account");
-        }
-
-        userRepository.delete(user);
+        throw new UnsupportedOperationException("Users are now deleted via the Employee management module.");
     }
 
     private RoleResponseDTO toRoleResponseDTO(Role role) {
@@ -262,7 +213,7 @@ public class RbacService {
         dto.setName(role.getName());
         dto.setDescription(role.getDescription());
         dto.setSystemRole(SYSTEM_ROLES.contains(role.getName()));
-        dto.setUserCount((int) userRepository.countByRoles_Id(role.getId()));
+        dto.setUserCount((int) employeeRepository.countByRoles_Id(role.getId()));
 
         List<PermissionDTO> perms = role.getPermissions().stream()
                 .sorted(Comparator.comparing(Permission::getName))
@@ -272,29 +223,26 @@ public class RbacService {
         return dto;
     }
 
-    private UserResponseDTO toUserResponseDTO(User user) {
+    private UserResponseDTO toUserResponseDTO(Employee emp) {
         UserResponseDTO dto = new UserResponseDTO();
-        dto.setId(user.getId());
-        dto.setEmail(user.getEmail());
-        dto.setActive(user.isActive());
+        dto.setId(emp.getId());
+        dto.setEmail(emp.getEmail().getValue());
+        dto.setActive(emp.getStatus() != model.employee.EmployeeStatus.TERMINATED);
+        dto.setEmployeeId(emp.getEmployeeId());
 
-        if (user.getEmployee() != null) {
-            Employee emp = user.getEmployee();
-            dto.setEmployeeId(emp.getEmployeeId());
-            if (emp.getFullName() != null) {
-                dto.setEmployeeName(emp.getFullName().getFirstName() + " " + emp.getFullName().getLastName());
+        if (emp.getFullName() != null) {
+            dto.setEmployeeName(emp.getFullName().getFirstName() + " " + emp.getFullName().getLastName());
+        }
+        if (emp.getPosition() != null) {
+            if (emp.getPosition().getTitle() != null) {
+                dto.setPositionTitle(emp.getPosition().getTitle());
             }
-            if (emp.getPosition() != null) {
-                if (emp.getPosition().getTitle() != null) {
-                    dto.setPositionTitle(emp.getPosition().getTitle());
-                }
-                if (emp.getPosition().getDepartment() != null) {
-                    dto.setDepartmentName(emp.getPosition().getDepartment().getName());
-                }
+            if (emp.getPosition().getDepartment() != null) {
+                dto.setDepartmentName(emp.getPosition().getDepartment().getName());
             }
         }
 
-        List<RoleSummaryDTO> roles = user.getRoles().stream()
+        List<RoleSummaryDTO> roles = emp.getRoles().stream()
                 .sorted(Comparator.comparing(Role::getId))
                 .map(r -> new RoleSummaryDTO(r.getId(), r.getName(), r.getDescription()))
                 .collect(Collectors.toList());

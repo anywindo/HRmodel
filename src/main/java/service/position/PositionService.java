@@ -34,10 +34,14 @@ public class PositionService {
         return positionRepository.findAll().stream()
                 .map(pos -> {
                     PositionResponse res = new PositionResponse(pos);
-                    employeeRepository.findByPosition_PositionId(pos.getPositionId()).stream()
+                    String occupants = employeeRepository.findByPosition_PositionId(pos.getPositionId()).stream()
                             .filter(e -> e.getStatus() == EmployeeStatus.ACTIVE)
-                            .findFirst()
-                            .ifPresent(e -> res.setOccupantName(e.getFullName().getFirstName() + " " + e.getFullName().getLastName()));
+                            .map(e -> e.getFullName().getFirstName() + " " + (e.getFullName().getLastName() != null ? e.getFullName().getLastName() : ""))
+                            .map(String::trim)
+                            .collect(Collectors.joining(", "));
+                    if (!occupants.isEmpty()) {
+                        res.setOccupantName(occupants);
+                    }
                     return res;
                 })
                 .collect(Collectors.toList());
@@ -48,10 +52,14 @@ public class PositionService {
         Position position = positionRepository.findByPositionId(new PositionId(id.toUpperCase()))
                 .orElseThrow(() -> new IllegalArgumentException("Position not found: " + id));
         PositionResponse res = new PositionResponse(position);
-        employeeRepository.findByPosition_PositionId(position.getPositionId()).stream()
+        String occupants = employeeRepository.findByPosition_PositionId(position.getPositionId()).stream()
                 .filter(e -> e.getStatus() == EmployeeStatus.ACTIVE)
-                .findFirst()
-                .ifPresent(e -> res.setOccupantName(e.getFullName().getFirstName() + " " + e.getFullName().getLastName()));
+                .map(e -> e.getFullName().getFirstName() + " " + (e.getFullName().getLastName() != null ? e.getFullName().getLastName() : ""))
+                .map(String::trim)
+                .collect(Collectors.joining(", "));
+        if (!occupants.isEmpty()) {
+            res.setOccupantName(occupants);
+        }
         return res;
     }
 

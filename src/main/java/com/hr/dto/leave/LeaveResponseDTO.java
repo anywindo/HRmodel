@@ -17,6 +17,7 @@ public class LeaveResponseDTO {
     private LocalDateTime createdAt;
     private String managerApproverName;
     private String hrApproverName;
+    private String attachmentUrl;
     
     public LeaveResponseDTO(LeaveRequest request) {
         this.requestId = request.getRequestId();
@@ -28,6 +29,7 @@ public class LeaveResponseDTO {
         this.reason = request.getReason();
         this.status = request.getStatus().name();
         this.createdAt = request.getCreatedAt();
+        this.attachmentUrl = request.getAttachmentUrl();
         if (request.getManagerApprover() != null && request.getManagerApprover().getFullName() != null) {
             this.managerApproverName = request.getManagerApprover().getFullName().getFirstName() + " " + request.getManagerApprover().getFullName().getLastName();
         }
@@ -60,4 +62,6 @@ public class LeaveResponseDTO {
     public void setManagerApproverName(String managerApproverName) { this.managerApproverName = managerApproverName; }
     public String getHrApproverName() { return hrApproverName; }
     public void setHrApproverName(String hrApproverName) { this.hrApproverName = hrApproverName; }
+    public String getAttachmentUrl() { return attachmentUrl; }
+    public void setAttachmentUrl(String attachmentUrl) { this.attachmentUrl = attachmentUrl; }
 }

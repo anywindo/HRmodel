@@ -7,6 +7,7 @@ public class LeaveRequestDTO {
     private LocalDate startDate;
     private LocalDate endDate;
     private String reason;
+    private String attachmentUrl;
 
     public LeaveRequestDTO() {}
 
@@ -18,4 +19,6 @@ public class LeaveRequestDTO {
     public void setEndDate(java.time.LocalDate endDate) { this.endDate = endDate; }
     public String getReason() { return reason; }
     public void setReason(String reason) { this.reason = reason; }
+    public String getAttachmentUrl() { return attachmentUrl; }
+    public void setAttachmentUrl(String attachmentUrl) { this.attachmentUrl = attachmentUrl; }
 }

@@ -4,8 +4,8 @@ import model.leave.EmployeeLeaveBalance;
 
 public class LeaveBalanceDTO {
     private String employeeId;
-    private int annualLeaveDays;
-    private int sickLeaveDays;
+    private double annualLeaveDays;
+    private double sickLeaveDays;
     
     public LeaveBalanceDTO(EmployeeLeaveBalance balance) {
         this.employeeId = balance.getEmployee().getEmployeeId();
@@ -17,8 +17,8 @@ public class LeaveBalanceDTO {
 
     public String getEmployeeId() { return employeeId; }
     public void setEmployeeId(String employeeId) { this.employeeId = employeeId; }
-    public int getAnnualLeaveDays() { return annualLeaveDays; }
-    public void setAnnualLeaveDays(int annualLeaveDays) { this.annualLeaveDays = annualLeaveDays; }
-    public int getSickLeaveDays() { return sickLeaveDays; }
-    public void setSickLeaveDays(int sickLeaveDays) { this.sickLeaveDays = sickLeaveDays; }
+    public double getAnnualLeaveDays() { return annualLeaveDays; }
+    public void setAnnualLeaveDays(double annualLeaveDays) { this.annualLeaveDays = annualLeaveDays; }
+    public double getSickLeaveDays() { return sickLeaveDays; }
+    public void setSickLeaveDays(double sickLeaveDays) { this.sickLeaveDays = sickLeaveDays; }
 }

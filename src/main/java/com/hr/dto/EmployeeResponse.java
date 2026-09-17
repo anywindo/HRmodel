@@ -23,12 +23,27 @@ public class EmployeeResponse {
     private String maritalStatus;
     private PositionDto position;
     private DepartmentDto department;
+    private String activationToken;
+    private boolean isDelegator;
+    private boolean isDelegatee;
 
     public EmployeeResponse(Employee employee) {
-        this(employee, null);
+        this(employee, null, null, false, false);
     }
 
     public EmployeeResponse(Employee employee, List<Employee> allEmployees) {
+        this(employee, allEmployees, null, false, false);
+    }
+
+    public EmployeeResponse(Employee employee, String activationToken) {
+        this(employee, null, activationToken, false, false);
+    }
+    
+    public EmployeeResponse(Employee employee, List<Employee> allEmployees, boolean isDelegator, boolean isDelegatee) {
+        this(employee, allEmployees, null, isDelegator, isDelegatee);
+    }
+
+    public EmployeeResponse(Employee employee, List<Employee> allEmployees, String activationToken, boolean isDelegator, boolean isDelegatee) {
         this.id = employee.getId();
         this.employeeId = employee.getEmployeeId();
         this.fullName = new FullNameDto(
@@ -78,6 +93,9 @@ public class EmployeeResponse {
                 );
             }
         }
+        this.activationToken = activationToken;
+        this.isDelegator = isDelegator;
+        this.isDelegatee = isDelegatee;
     }
 
     public static class FullNameDto {
@@ -139,4 +157,7 @@ public class EmployeeResponse {
     public String getMaritalStatus() { return maritalStatus; }
     public PositionDto getPosition() { return position; }
     public DepartmentDto getDepartment() { return department; }
+    public String getActivationToken() { return activationToken; }
+    public boolean isDelegator() { return isDelegator; }
+    public boolean isDelegatee() { return isDelegatee; }
 }

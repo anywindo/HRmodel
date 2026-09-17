@@ -18,15 +18,15 @@ public class EmployeeLeaveBalance {
     private Employee employee;
 
     @Column(name = "annual_leave_days", nullable = false)
-    private int annualLeaveDays;
+    private double annualLeaveDays;
 
     @Column(name = "sick_leave_days", nullable = false)
-    private int sickLeaveDays;
+    private double sickLeaveDays;
 
     public EmployeeLeaveBalance() {
     }
 
-    public EmployeeLeaveBalance(Employee employee, int annualLeaveDays, int sickLeaveDays) {
+    public EmployeeLeaveBalance(Employee employee, double annualLeaveDays, double sickLeaveDays) {
         this.balanceId = UUID.randomUUID().toString();
         this.employee = employee;
         this.annualLeaveDays = annualLeaveDays;
@@ -49,19 +49,19 @@ public class EmployeeLeaveBalance {
         this.employee = employee;
     }
 
-    public int getAnnualLeaveDays() {
+    public double getAnnualLeaveDays() {
         return annualLeaveDays;
     }
 
-    public void setAnnualLeaveDays(int annualLeaveDays) {
+    public void setAnnualLeaveDays(double annualLeaveDays) {
         this.annualLeaveDays = annualLeaveDays;
     }
 
-    public int getSickLeaveDays() {
+    public double getSickLeaveDays() {
         return sickLeaveDays;
     }
 
-    public void setSickLeaveDays(int sickLeaveDays) {
+    public void setSickLeaveDays(double sickLeaveDays) {
         this.sickLeaveDays = sickLeaveDays;
     }
 }

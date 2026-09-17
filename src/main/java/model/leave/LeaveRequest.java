@@ -47,6 +47,9 @@ public class LeaveRequest {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "attachment_url", length = 500)
+    private String attachmentUrl;
+
     public LeaveRequest(Employee employee, LeaveType leaveType, LocalDate startDate, LocalDate endDate, String reason) {
         this.requestId = UUID.randomUUID().toString();
         this.employee = employee;
@@ -88,4 +91,6 @@ public class LeaveRequest {
     public void setHrApprover(Employee hrApprover) { this.hrApprover = hrApprover; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public String getAttachmentUrl() { return attachmentUrl; }
+    public void setAttachmentUrl(String attachmentUrl) { this.attachmentUrl = attachmentUrl; }
 }

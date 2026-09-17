@@ -54,6 +54,20 @@ public class Employee {
     @JoinColumn(name = "position_id")
     private model.position.Position position;
 
+    @Column
+    private String passwordHash;
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+        name = "employee_roles",
+        joinColumns = @JoinColumn(name = "employee_id"),
+        inverseJoinColumns = @JoinColumn(name = "role_id")
+    )
+    private java.util.Set<model.auth.Role> roles = new java.util.HashSet<>();
+
+    @Column(nullable = false)
+    private boolean requiresPasswordChange = true;
+
     // JPA requires a no-arg constructor
     protected Employee() {}
 
@@ -130,18 +144,14 @@ public class Employee {
         if (newPosition != null) this.position = newPosition;
     }
 
-    public void terminate() {
-        if (this.status == EmployeeStatus.TERMINATED) {
-            throw new IllegalStateException("Employee is already terminated");
+    public void changeStatus(EmployeeStatus newStatus) {
+        if (this.status == newStatus) {
+            throw new IllegalStateException("Employee is already " + newStatus.toString().toLowerCase());
         }
-        this.status = EmployeeStatus.TERMINATED;
-    }
-
-    public void resign() {
-        if (this.status == EmployeeStatus.RESIGNED) {
-            throw new IllegalStateException("Employee has already resigned");
+        if (newStatus == null) {
+            throw new IllegalArgumentException("Status cannot be null");
         }
-        this.status = EmployeeStatus.RESIGNED;
+        this.status = newStatus;
     }
 
     // Getters
@@ -158,4 +168,13 @@ public class Employee {
     public EmployeeStatus getStatus() { return status; }
     public MaritalStatus getMaritalStatus() { return maritalStatus; }
     public model.position.Position getPosition() { return position; }
+
+    public String getPasswordHash() { return passwordHash; }
+    public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
+
+    public java.util.Set<model.auth.Role> getRoles() { return roles; }
+    public void setRoles(java.util.Set<model.auth.Role> roles) { this.roles = roles; }
+
+    public boolean isRequiresPasswordChange() { return requiresPasswordChange; }
+    public void setRequiresPasswordChange(boolean requiresPasswordChange) { this.requiresPasswordChange = requiresPasswordChange; }
 }

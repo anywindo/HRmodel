@@ -11,7 +11,7 @@ public final class Email {
             "^[a-zA-Z0-9_!#$%&'*+/=?`{|}~^.-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
     );
 
-    private String email;
+    private String value;
 
     protected Email() {}
 
@@ -26,27 +26,27 @@ public final class Email {
             throw new IllegalArgumentException("Invalid email format.");
         }
 
-        this.email = email;
+        this.value = email;
     }
 
     public String getValue() {
-        return email;
+        return value;
     }
 
     @Override
     public String toString() {
-        return email;
+        return value;
     }
 
     @Override
     public boolean equals(Object obj) {
         if (this == obj) return true;
         if (!(obj instanceof Email other)) return false;
-        return email.equals(other.email);
+        return value.equals(other.value);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(email);
+        return Objects.hash(value);
     }
 }

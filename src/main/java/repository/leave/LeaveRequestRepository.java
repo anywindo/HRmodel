@@ -12,9 +12,13 @@ import java.util.List;
 @Repository
 public interface LeaveRequestRepository extends JpaRepository<LeaveRequest, String> {
     List<LeaveRequest> findByEmployee_EmployeeIdOrderByCreatedAtDesc(String employeeId);
+    List<LeaveRequest> findByEmployee_EmployeeId(String employeeId);
     
-    // For a manager to see pending requests from their subordinates
+    // For a manager to see pending requests from their direct subordinates
     List<LeaveRequest> findByStatusAndEmployee_Position_ReportsTo_PositionId_Value(LeaveStatus status, String managerPositionId);
+    
+    // For a manager to see pending requests from ANY subordinate in their branch
+    List<LeaveRequest> findByStatusAndEmployee_Position_PositionId_ValueIn(LeaveStatus status, List<String> subordinatePositionIds);
     
     // For HR to see pending requests
     List<LeaveRequest> findByStatus(LeaveStatus status);
@@ -25,4 +29,8 @@ public interface LeaveRequestRepository extends JpaRepository<LeaveRequest, Stri
 
     // History: all non-pending requests (for HR view)
     List<LeaveRequest> findByStatusInOrderByCreatedAtDesc(List<LeaveStatus> statuses);
+
+    // Calendar: approved leaves overlapping a date range
+    @Query("SELECT r FROM LeaveRequest r WHERE r.status = 'APPROVED' AND r.startDate <= :end AND r.endDate >= :start")
+    List<LeaveRequest> findApprovedOverlapping(@Param("start") java.time.LocalDate start, @Param("end") java.time.LocalDate end);
 }

@@ -8,8 +8,8 @@ import service.employee.EmployeeService;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
-import repository.auth.UserRepository;
-import model.auth.User;
+import repository.employee.EmployeeRepository;
+import model.employee.Employee;
 import org.springframework.http.ResponseEntity;
 
 import java.util.List;
@@ -20,11 +20,11 @@ import java.util.List;
 public class EmployeeController {
 
     private final EmployeeService employeeService;
-    private final UserRepository userRepository;
+    private final EmployeeRepository employeeRepository;
 
-    public EmployeeController(EmployeeService employeeService, UserRepository userRepository) {
+    public EmployeeController(EmployeeService employeeService, EmployeeRepository employeeRepository) {
         this.employeeService = employeeService;
-        this.userRepository = userRepository;
+        this.employeeRepository = employeeRepository;
     }
 
     @GetMapping
@@ -40,13 +40,9 @@ public class EmployeeController {
         }
 
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        User user = userRepository.findByEmail(userDetails.getUsername()).orElseThrow();
+        Employee employee = employeeRepository.findByEmail_Value(userDetails.getUsername()).orElseThrow();
         
-        if (user.getEmployee() == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No employee record associated with this user.");
-        }
-        
-        return ResponseEntity.ok(employeeService.getEmployeeById(user.getEmployee().getEmployeeId()));
+        return ResponseEntity.ok(employeeService.getEmployeeById(employee.getEmployeeId()));
     }
 
     @GetMapping("/{id}")
@@ -65,9 +61,9 @@ public class EmployeeController {
         return employeeService.updateEmployee(id, request);
     }
 
-    @DeleteMapping("/{id}")
+    @PatchMapping("/{id}/status")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteEmployee(@PathVariable String id) {
-        employeeService.deleteEmployee(id);
+    public void changeEmployeeStatus(@PathVariable String id, @RequestParam String status, @RequestParam String reason) {
+        employeeService.changeEmployeeStatus(id, status, reason);
     }
 }
