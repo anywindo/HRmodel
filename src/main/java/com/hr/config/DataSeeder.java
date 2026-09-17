@@ -21,6 +21,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import model.auth.User;
 import model.auth.Role;
 import model.auth.Permission;
+import model.leave.EmployeeLeaveBalance;
+import model.leave.LeaveRequest;
+import model.leave.LeaveType;
+import repository.leave.EmployeeLeaveBalanceRepository;
+import repository.leave.LeaveRequestRepository;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -40,8 +45,10 @@ public class DataSeeder implements CommandLineRunner {
     private final RoleRepository roleRepository;
     private final PermissionRepository permissionRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmployeeLeaveBalanceRepository leaveBalanceRepository;
+    private final LeaveRequestRepository leaveRequestRepository;
 
-    public DataSeeder(DepartmentRepository departmentRepository, PositionRepository positionRepository, EmployeeRepository employeeRepository, CompanyProfileRepository companyProfileRepository, UserRepository userRepository, RoleRepository roleRepository, PermissionRepository permissionRepository, PasswordEncoder passwordEncoder) {
+    public DataSeeder(DepartmentRepository departmentRepository, PositionRepository positionRepository, EmployeeRepository employeeRepository, CompanyProfileRepository companyProfileRepository, UserRepository userRepository, RoleRepository roleRepository, PermissionRepository permissionRepository, PasswordEncoder passwordEncoder, EmployeeLeaveBalanceRepository leaveBalanceRepository, LeaveRequestRepository leaveRequestRepository) {
         this.departmentRepository = departmentRepository;
         this.positionRepository = positionRepository;
         this.employeeRepository = employeeRepository;
@@ -50,6 +57,8 @@ public class DataSeeder implements CommandLineRunner {
         this.roleRepository = roleRepository;
         this.permissionRepository = permissionRepository;
         this.passwordEncoder = passwordEncoder;
+        this.leaveBalanceRepository = leaveBalanceRepository;
+        this.leaveRequestRepository = leaveRequestRepository;
     }
 
     @Override
@@ -158,6 +167,11 @@ public class DataSeeder implements CommandLineRunner {
         employees.add(createEmp("Lucas", "Gabriel", "Silva", "lucas.silva@techcorp.com", "5554445566", "+1", 1999, 3, 22, 2023, 8, 1, Gender.MAN, Sex.MALE, "85000.00", MaritalStatus.SINGLE, jrDev, EmployeeStatus.ACTIVE));
         employees.add(createEmp("Jordan", "Alex", "Taylor", "jordan.taylor@techcorp.com", "5558887766", "+1", 1993, 10, 14, 2020, 3, 15, Gender.AGENDER, Sex.UNSPECIFIED, "115000.00", MaritalStatus.PREFER_NOT_TO_SAY, qaLead, EmployeeStatus.ACTIVE));
 
+        // Generate additional 5 coworkers for Engineering department
+        for (int i = 1; i <= 5; i++) {
+            employees.add(createEmp("EngDev" + i, "", "Smith", "engdev" + i + ".smith@techcorp.com", "55500010" + String.format("%02d", i), "+1", 1995, 1, 1, 2021, 6, 1, Gender.NON_BINARY, Sex.UNSPECIFIED, "90000.00", MaritalStatus.SINGLE, jrDev, EmployeeStatus.ACTIVE));
+        }
+
         // HR, Marketing, Finance & Others
         employees.add(createEmp("Frank", "Thomas", "Castle", "frank.castle@techcorp.com", "5552221111", "+1", 1992, 8, 30, 2020, 11, 1, Gender.MAN, Sex.MALE, "88000.00", MaritalStatus.SINGLE, hrManager, EmployeeStatus.ACTIVE));
         employees.add(createEmp("Mei-Ling", "", "Zhang", "meiling.zhang@techcorp.com", "5553334455", "+1", 1996, 4, 16, 2022, 9, 1, Gender.WOMAN, Sex.FEMALE, "76000.00", MaritalStatus.SINGLE, hrSpec, EmployeeStatus.ACTIVE));
@@ -172,6 +186,20 @@ public class DataSeeder implements CommandLineRunner {
         employees.add(createEmp("Zoe", "Amara", "Kim", "zoe.kim@techcorp.com", "5552223344", "+1", 1996, 10, 9, 2023, 1, 10, Gender.OTHER, Sex.UNSPECIFIED, "79000.00", MaritalStatus.PREFER_NOT_TO_SAY, hrSpec, EmployeeStatus.SUSPENDED));
 
         employeeRepository.saveAll(employees);
+        
+        // Seed Leave Balances for all employees
+        List<EmployeeLeaveBalance> balances = new ArrayList<>();
+        for (Employee emp : employees) {
+            balances.add(new EmployeeLeaveBalance(emp, 12, 14));
+        }
+        leaveBalanceRepository.saveAll(balances);
+        
+        // Seed a mock Leave Request for Diana (the standard user)
+        Employee diana = employees.stream().filter(e -> e.getEmail().getValue().equals("diana.prince@techcorp.com")).findFirst().orElse(null);
+        if (diana != null) {
+            LeaveRequest req1 = new LeaveRequest(diana, LeaveType.ANNUAL, LocalDate.now().plusDays(10), LocalDate.now().plusDays(12), "Vacation");
+            leaveRequestRepository.save(req1);
+        }
 
         System.out.println("Enhanced diverse dummy data seeded successfully with " + employees.size() + " employees across 6 departments and 16 positions!");
     }
@@ -182,7 +210,10 @@ public class DataSeeder implements CommandLineRunner {
                 "employee:view", "employee:create", "employee:edit", "employee:delete",
                 "department:view", "department:create", "department:edit", "department:delete",
                 "position:view", "position:create", "position:edit", "position:delete",
-                "company_profile:view", "company_profile:edit"
+                "company_profile:view", "company_profile:edit",
+                "leave:view", "leave:approve", "leave:manage",
+                "role:view", "role:create", "role:edit", "role:delete",
+                "user:view", "user:create", "user:edit", "user:delete"
         );
 
         for (String permName : defaultPermissions) {
@@ -212,15 +243,118 @@ public class DataSeeder implements CommandLineRunner {
             roleRepository.save(superAdminRole);
         }
 
-        // Seed admin user
-        if (userRepository.findByEmail("admin@company.com").isEmpty()) {
-            User admin = new User();
-            admin.setEmail("admin@company.com");
-            admin.setPasswordHash(passwordEncoder.encode("admin123"));
-            admin.setActive(true);
-            admin.getRoles().add(superAdminRole);
-            userRepository.save(admin);
-            System.out.println("Admin user seeded: admin@company.com / admin123");
+        // Seed STANDARD_USER role
+        Role standardUserRole = roleRepository.findByName("STANDARD_USER").orElseGet(() -> {
+            Role role = new Role();
+            role.setName("STANDARD_USER");
+            role.setDescription("Standard Employee with read-only access to company data");
+            return roleRepository.save(role);
+        });
+
+        // Assign limited permissions to STANDARD_USER
+        List<String> stdPerms = java.util.Arrays.asList(
+            "employee:view", "company_profile:view", "leave:view"
+        );
+        boolean stdRoleUpdated = false;
+        for (String permName : stdPerms) {
+            Permission perm = permissionRepository.findByName(permName).orElse(null);
+            if (perm != null && !standardUserRole.getPermissions().contains(perm)) {
+                standardUserRole.getPermissions().add(perm);
+                stdRoleUpdated = true;
+            }
+        }
+        if (stdRoleUpdated) {
+            roleRepository.save(standardUserRole);
+        }
+
+        // Seed HR role
+        Role hrRole = roleRepository.findByName("HR").orElseGet(() -> {
+            Role role = new Role();
+            role.setName("HR");
+            role.setDescription("Human Resources with employee management and leave approval access");
+            return roleRepository.save(role);
+        });
+
+        List<String> hrPerms = java.util.Arrays.asList(
+            "employee:view", "employee:create", "employee:edit",
+            "department:view", "department:create", "department:edit", "department:delete",
+            "position:view", "position:create", "position:edit", "position:delete",
+            "company_profile:view", "company_profile:edit",
+            "leave:view", "leave:approve", "leave:manage"
+        );
+        boolean hrRoleUpdated = false;
+        for (String permName : hrPerms) {
+            Permission perm = permissionRepository.findByName(permName).orElse(null);
+            if (perm != null && !hrRole.getPermissions().contains(perm)) {
+                hrRole.getPermissions().add(perm);
+                hrRoleUpdated = true;
+            }
+        }
+        if (hrRoleUpdated) {
+            roleRepository.save(hrRole);
+        }
+
+        // Delete old admin account if it exists
+        userRepository.findByEmail("admin@company.com").ifPresent(oldAdmin -> {
+            userRepository.delete(oldAdmin);
+            System.out.println("Deleted old admin account: admin@company.com");
+        });
+
+        // 1. Suparadmin — Alice Smith (CEO), SUPER_ADMIN
+        if (userRepository.findByEmail("suparadmin@company.com").isEmpty()) {
+            User suparadmin = new User();
+            suparadmin.setEmail("suparadmin@company.com");
+            suparadmin.setPasswordHash(passwordEncoder.encode("suparadmin123"));
+            suparadmin.setActive(true);
+            suparadmin.getRoles().add(superAdminRole);
+            employeeRepository.findAll().stream()
+                .filter(e -> e.getEmail().getValue().equals("alice.smith@techcorp.com"))
+                .findFirst().ifPresent(suparadmin::setEmployee);
+            userRepository.save(suparadmin);
+            System.out.println("Suparadmin seeded: suparadmin@company.com / suparadmin123 (Alice Smith - CEO)");
+        }
+
+        // 2. HR — Evelyn Taylor (VP of Human Resources), HR role
+        if (userRepository.findByEmail("hr@company.com").isEmpty()) {
+            User hrUser = new User();
+            hrUser.setEmail("hr@company.com");
+            hrUser.setPasswordHash(passwordEncoder.encode("hr123"));
+            hrUser.setActive(true);
+            hrUser.getRoles().add(hrRole);
+            employeeRepository.findAll().stream()
+                .filter(e -> e.getEmail().getValue().equals("evelyn.taylor@techcorp.com"))
+                .findFirst().ifPresent(hrUser::setEmployee);
+            userRepository.save(hrUser);
+            System.out.println("HR user seeded: hr@company.com / hr123 (Evelyn Taylor - VP HR)");
+        }
+
+        // 3. Manager (Atasan dari User) — Charlie Brown (Sr. Software Engineer), STANDARD_USER
+        //    Diana (jrDev) reports to srDev → Charlie Brown is Diana's direct superior
+        if (userRepository.findByEmail("manager@company.com").isEmpty()) {
+            User manager = new User();
+            manager.setEmail("manager@company.com");
+            manager.setPasswordHash(passwordEncoder.encode("manager123"));
+            manager.setActive(true);
+            manager.getRoles().add(standardUserRole);
+            employeeRepository.findAll().stream()
+                .filter(e -> e.getEmail().getValue().equals("charlie.brown@techcorp.com"))
+                .findFirst().ifPresent(manager::setEmployee);
+            userRepository.save(manager);
+            System.out.println("Manager user seeded: manager@company.com / manager123 (Charlie Brown - Sr. Software Engineer)");
+        }
+
+        // 4. User — Diana Prince (Jr. Software Engineer), STANDARD_USER
+        if (userRepository.findByEmail("user@company.com").isEmpty()) {
+            User user = new User();
+            user.setEmail("user@company.com");
+            user.setPasswordHash(passwordEncoder.encode("user123"));
+            user.setActive(true);
+            user.getRoles().add(standardUserRole);
+            employeeRepository.findAll().stream()
+                .filter(e -> e.getEmail().getValue().equals("diana.prince@techcorp.com"))
+                .findFirst().ifPresent(user::setEmployee);
+            userRepository.save(user);
+            System.out.println("Standard user seeded: user@company.com / user123 (Diana Prince - Jr. Software Engineer)");
         }
     }
 

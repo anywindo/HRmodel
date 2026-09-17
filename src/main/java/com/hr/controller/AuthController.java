@@ -15,11 +15,13 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import repository.auth.UserRepository;
 import security.JwtUtil;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import repository.employee.EmployeeRepository;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -28,11 +30,15 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final EmployeeRepository employeeRepository;
 
-    public AuthController(AuthenticationManager authenticationManager, JwtUtil jwtUtil, UserRepository userRepository) {
+    public AuthController(AuthenticationManager authenticationManager, JwtUtil jwtUtil, UserRepository userRepository, PasswordEncoder passwordEncoder, EmployeeRepository employeeRepository) {
         this.authenticationManager = authenticationManager;
         this.jwtUtil = jwtUtil;
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.employeeRepository = employeeRepository;
     }
 
     @PostMapping("/login")
@@ -69,6 +75,23 @@ public class AuthController {
             responseBody.put("email", user.getEmail());
             responseBody.put("permissions", permissions);
 
+            // Add employee name and hasSubordinates flag
+            model.employee.Employee emp = user.getEmployee();
+            if (emp != null) {
+                responseBody.put("name", emp.getFullName().getFirstName() + " " + emp.getFullName().getLastName());
+                boolean hasSubordinates = false;
+                if (emp.getPosition() != null) {
+                    String myPositionId = emp.getPosition().getPositionId().getValue();
+                    hasSubordinates = employeeRepository.findAll().stream().anyMatch(e ->
+                        e.getPosition() != null && e.getPosition().getReportsTo() != null &&
+                        e.getPosition().getReportsTo().getPositionId().getValue().equals(myPositionId)
+                    );
+                }
+                responseBody.put("hasSubordinates", hasSubordinates);
+            } else {
+                responseBody.put("hasSubordinates", false);
+            }
+
             return ResponseEntity.ok(responseBody);
         } catch (Exception e) {
             e.printStackTrace();
@@ -95,6 +118,25 @@ public class AuthController {
         responseBody.put("email", user.getEmail());
         responseBody.put("permissions", permissions);
 
+        // Add employee name and hasSubordinates flag
+        model.employee.Employee emp = user.getEmployee();
+        if (emp != null) {
+            responseBody.put("name", emp.getFullName().getFirstName() + " " + emp.getFullName().getLastName());
+            
+            // Check if any employee's position reports to this user's position
+            boolean hasSubordinates = false;
+            if (emp.getPosition() != null) {
+                String myPositionId = emp.getPosition().getPositionId().getValue();
+                hasSubordinates = employeeRepository.findAll().stream().anyMatch(e ->
+                    e.getPosition() != null && e.getPosition().getReportsTo() != null &&
+                    e.getPosition().getReportsTo().getPositionId().getValue().equals(myPositionId)
+                );
+            }
+            responseBody.put("hasSubordinates", hasSubordinates);
+        } else {
+            responseBody.put("hasSubordinates", false);
+        }
+
         return ResponseEntity.ok(responseBody);
     }
 
@@ -106,6 +148,33 @@ public class AuthController {
         cookie.setMaxAge(0);
         response.addCookie(cookie);
         SecurityContextHolder.clearContext();
+        return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/password")
+    public ResponseEntity<?> updatePassword(@RequestBody Map<String, String> request) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated() || authentication.getPrincipal().equals("anonymousUser")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        String currentPassword = request.get("currentPassword");
+        String newPassword = request.get("newPassword");
+
+        if (currentPassword == null || newPassword == null || newPassword.length() < 6) {
+            return ResponseEntity.badRequest().body("Invalid password provided.");
+        }
+
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        User user = userRepository.findByEmail(userDetails.getUsername()).orElseThrow();
+
+        if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Current password is incorrect.");
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+
         return ResponseEntity.ok().build();
     }
 }

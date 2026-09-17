@@ -3,11 +3,19 @@ package service.employee;
 import com.hr.dto.EmployeeRequest;
 import com.hr.dto.EmployeeResponse;
 import model.employee.*;
+import model.position.Position;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import repository.position.PositionRepository;
 import repository.employee.EmployeeRepository;
+import repository.auth.UserRepository;
+import model.auth.User;
+import model.leave.EmployeeLeaveBalance;
+import repository.leave.EmployeeLeaveBalanceRepository;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -17,17 +25,59 @@ public class EmployeeService {
 
     private final EmployeeRepository employeeRepository;
     private final PositionRepository positionRepository;
+    private final UserRepository userRepository;
+    private final EmployeeLeaveBalanceRepository balanceRepository;
 
-    public EmployeeService(EmployeeRepository employeeRepository, PositionRepository positionRepository) {
+    public EmployeeService(EmployeeRepository employeeRepository, PositionRepository positionRepository, UserRepository userRepository, EmployeeLeaveBalanceRepository balanceRepository) {
         this.employeeRepository = employeeRepository;
         this.positionRepository = positionRepository;
+        this.userRepository = userRepository;
+        this.balanceRepository = balanceRepository;
     }
 
     @Transactional(readOnly = true)
     public List<EmployeeResponse> getAllEmployees() {
-        return employeeRepository.findAll().stream()
-                .map(EmployeeResponse::new)
-                .collect(Collectors.toList());
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        boolean canSeeAll = auth != null && auth.getAuthorities().stream().anyMatch(a -> 
+            a.getAuthority().equals("ROLE_SUPER_ADMIN") || a.getAuthority().equals("ROLE_HR"));
+        
+        List<Employee> allEmployees = employeeRepository.findAll();
+        
+        if (canSeeAll) {
+            return allEmployees.stream().map(e -> new EmployeeResponse(e, allEmployees)).collect(Collectors.toList());
+        }
+        
+        if (auth == null || !auth.isAuthenticated() || auth.getPrincipal().equals("anonymousUser")) {
+            return List.of();
+        }
+        
+        UserDetails userDetails = (UserDetails) auth.getPrincipal();
+        User currentUser = userRepository.findByEmail(userDetails.getUsername()).orElse(null);
+        Employee myEmp = currentUser != null ? currentUser.getEmployee() : null;
+                
+        if (myEmp == null) {
+            return List.of();
+        }
+        
+        String myDeptId = myEmp.getPosition() != null && myEmp.getPosition().getDepartment() != null 
+            ? myEmp.getPosition().getDepartment().getDepartmentId().getValue() : null;
+        Position myManagerPos = myEmp.getPosition() != null ? myEmp.getPosition().getReportsTo() : null;
+        
+        List<Employee> filtered = allEmployees.stream().filter(e -> {
+            if (e.getStatus() != EmployeeStatus.ACTIVE) return false;
+            
+            if (e.getEmployeeId().equals(myEmp.getEmployeeId())) return true;
+            if (myDeptId != null && e.getPosition() != null && e.getPosition().getDepartment() != null && 
+                e.getPosition().getDepartment().getDepartmentId().getValue().equals(myDeptId)) {
+                return true;
+            }
+            if (myManagerPos != null && e.getPosition() != null && 
+                e.getPosition().getPositionId().equals(myManagerPos.getPositionId())) {
+                return true;
+            }
+            return false;
+        }).collect(Collectors.toList());
+        return filtered.stream().map(e -> new EmployeeResponse(e, allEmployees)).collect(Collectors.toList());
     }
 
     public List<EmployeeResponse> getEmployeesByDepartmentId(String departmentId) {
@@ -69,6 +119,11 @@ public class EmployeeService {
         );
 
         Employee saved = employeeRepository.save(newEmployee);
+        
+        // Initialize leave balance
+        EmployeeLeaveBalance initialBalance = new EmployeeLeaveBalance(saved, 12, 14);
+        balanceRepository.save(initialBalance);
+        
         return new EmployeeResponse(saved);
     }
 

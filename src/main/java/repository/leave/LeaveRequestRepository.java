@@ -1,0 +1,28 @@
+package repository.leave;
+
+import model.leave.LeaveRequest;
+import model.leave.LeaveStatus;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+@Repository
+public interface LeaveRequestRepository extends JpaRepository<LeaveRequest, String> {
+    List<LeaveRequest> findByEmployee_EmployeeIdOrderByCreatedAtDesc(String employeeId);
+    
+    // For a manager to see pending requests from their subordinates
+    List<LeaveRequest> findByStatusAndEmployee_Position_ReportsTo_PositionId_Value(LeaveStatus status, String managerPositionId);
+    
+    // For HR to see pending requests
+    List<LeaveRequest> findByStatus(LeaveStatus status);
+
+    // History: requests acted on by a manager (approved or rejected at manager stage)
+    @Query("SELECT r FROM LeaveRequest r WHERE r.managerApprover.employeeId = :managerId ORDER BY r.createdAt DESC")
+    List<LeaveRequest> findByManagerApprover_EmployeeId(@Param("managerId") String managerId);
+
+    // History: all non-pending requests (for HR view)
+    List<LeaveRequest> findByStatusInOrderByCreatedAtDesc(List<LeaveStatus> statuses);
+}

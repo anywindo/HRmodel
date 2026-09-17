@@ -9,6 +9,7 @@ public class PositionResponse {
     private DepartmentDto department;
     private String reportsToId;
     private String reportsToTitle;
+    private String occupantName;
 
     public PositionResponse(Position position) {
         this.positionId = position.getPositionId().getValue();
@@ -50,6 +51,14 @@ public class PositionResponse {
     
     public String getReportsToTitle() {
         return reportsToTitle;
+    }
+
+    public String getOccupantName() {
+        return occupantName;
+    }
+
+    public void setOccupantName(String occupantName) {
+        this.occupantName = occupantName;
     }
 
     public static class DepartmentDto {

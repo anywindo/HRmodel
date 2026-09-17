@@ -9,6 +9,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import repository.department.DepartmentRepository;
 import repository.position.PositionRepository;
+import repository.employee.EmployeeRepository;
+import model.employee.EmployeeStatus;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -19,16 +21,25 @@ public class PositionService {
 
     private final PositionRepository positionRepository;
     private final DepartmentRepository departmentRepository;
+    private final EmployeeRepository employeeRepository;
 
-    public PositionService(PositionRepository positionRepository, DepartmentRepository departmentRepository) {
+    public PositionService(PositionRepository positionRepository, DepartmentRepository departmentRepository, EmployeeRepository employeeRepository) {
         this.positionRepository = positionRepository;
         this.departmentRepository = departmentRepository;
+        this.employeeRepository = employeeRepository;
     }
 
     @Transactional(readOnly = true)
     public List<PositionResponse> getAllPositions() {
         return positionRepository.findAll().stream()
-                .map(PositionResponse::new)
+                .map(pos -> {
+                    PositionResponse res = new PositionResponse(pos);
+                    employeeRepository.findByPosition_PositionId(pos.getPositionId()).stream()
+                            .filter(e -> e.getStatus() == EmployeeStatus.ACTIVE)
+                            .findFirst()
+                            .ifPresent(e -> res.setOccupantName(e.getFullName().getFirstName() + " " + e.getFullName().getLastName()));
+                    return res;
+                })
                 .collect(Collectors.toList());
     }
 
@@ -36,7 +47,12 @@ public class PositionService {
     public PositionResponse getPositionById(String id) {
         Position position = positionRepository.findByPositionId(new PositionId(id.toUpperCase()))
                 .orElseThrow(() -> new IllegalArgumentException("Position not found: " + id));
-        return new PositionResponse(position);
+        PositionResponse res = new PositionResponse(position);
+        employeeRepository.findByPosition_PositionId(position.getPositionId()).stream()
+                .filter(e -> e.getStatus() == EmployeeStatus.ACTIVE)
+                .findFirst()
+                .ifPresent(e -> res.setOccupantName(e.getFullName().getFirstName() + " " + e.getFullName().getLastName()));
+        return res;
     }
 
     public PositionResponse createPosition(PositionRequest request) {

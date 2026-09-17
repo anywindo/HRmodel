@@ -5,6 +5,12 @@ import com.hr.dto.EmployeeResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import service.employee.EmployeeService;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import repository.auth.UserRepository;
+import model.auth.User;
+import org.springframework.http.ResponseEntity;
 
 import java.util.List;
 
@@ -14,14 +20,33 @@ import java.util.List;
 public class EmployeeController {
 
     private final EmployeeService employeeService;
+    private final UserRepository userRepository;
 
-    public EmployeeController(EmployeeService employeeService) {
+    public EmployeeController(EmployeeService employeeService, UserRepository userRepository) {
         this.employeeService = employeeService;
+        this.userRepository = userRepository;
     }
 
     @GetMapping
     public List<EmployeeResponse> getAllEmployees() {
         return employeeService.getAllEmployees();
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<?> getMyEmployeeRecord() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated() || authentication.getPrincipal().equals("anonymousUser")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        User user = userRepository.findByEmail(userDetails.getUsername()).orElseThrow();
+        
+        if (user.getEmployee() == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No employee record associated with this user.");
+        }
+        
+        return ResponseEntity.ok(employeeService.getEmployeeById(user.getEmployee().getEmployeeId()));
     }
 
     @GetMapping("/{id}")

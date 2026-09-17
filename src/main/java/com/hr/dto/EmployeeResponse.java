@@ -3,6 +3,7 @@ package com.hr.dto;
 import model.employee.Employee;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 public class EmployeeResponse {
     private Long id;
@@ -24,6 +25,10 @@ public class EmployeeResponse {
     private DepartmentDto department;
 
     public EmployeeResponse(Employee employee) {
+        this(employee, null);
+    }
+
+    public EmployeeResponse(Employee employee, List<Employee> allEmployees) {
         this.id = employee.getId();
         this.employeeId = employee.getEmployeeId();
         this.fullName = new FullNameDto(
@@ -47,9 +52,24 @@ public class EmployeeResponse {
         this.status = employee.getStatus().name();
         this.maritalStatus = employee.getMaritalStatus() != null ? employee.getMaritalStatus().name() : null;
         if (employee.getPosition() != null) {
+            ReportsToDto reportsToDto = null;
+            if (employee.getPosition().getReportsTo() != null) {
+                String rtPosId = employee.getPosition().getReportsTo().getPositionId().getValue();
+                String rtTitle = employee.getPosition().getReportsTo().getTitle();
+                String supervisorName = null;
+                if (allEmployees != null) {
+                    supervisorName = allEmployees.stream()
+                        .filter(e -> e.getPosition() != null && e.getPosition().getPositionId().getValue().equals(rtPosId))
+                        .findFirst()
+                        .map(e -> e.getFullName().getFirstName() + " " + e.getFullName().getLastName())
+                        .orElse(null);
+                }
+                reportsToDto = new ReportsToDto(rtPosId, rtTitle, supervisorName);
+            }
             this.position = new PositionDto(
                 employee.getPosition().getPositionId().getValue(),
-                employee.getPosition().getTitle()
+                employee.getPosition().getTitle(),
+                reportsToDto
             );
             if (employee.getPosition().getDepartment() != null) {
                 this.department = new DepartmentDto(
@@ -84,10 +104,18 @@ public class EmployeeResponse {
         public SalaryDto(BigDecimal a, String c) { this.amount = a; this.currency = c; }
     }
 
+    public static class ReportsToDto {
+        public String positionId;
+        public String title;
+        public String supervisorName;
+        public ReportsToDto(String id, String t, String name) { this.positionId = id; this.title = t; this.supervisorName = name; }
+    }
+
     public static class PositionDto {
         public String positionId;
         public String title;
-        public PositionDto(String id, String t) { this.positionId = id; this.title = t; }
+        public ReportsToDto reportsTo;
+        public PositionDto(String id, String t, ReportsToDto rt) { this.positionId = id; this.title = t; this.reportsTo = rt; }
     }
 
     public static class DepartmentDto {
