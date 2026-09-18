@@ -39,6 +39,7 @@ public class AuditLoggerService {
         this.objectMapper = new ObjectMapper();
         this.objectMapper.registerModule(new JavaTimeModule());
         this.objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        this.objectMapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
 
     @PostConstruct
@@ -105,6 +106,7 @@ public class AuditLoggerService {
 
         // Calculate hash
         entry.setPreviousHash(lastHash);
+        entry.setContentForHashing(entry.getContentForHashing());
         String hashStr = calculateHash(entry.getContentForHashing());
         entry.setHash(hashStr);
         lastHash = hashStr;
@@ -135,9 +137,21 @@ public class AuditLoggerService {
     }
     
     private String readLastHash(File file) {
-        // For simplicity in this implementation, if we restart and the file exists, 
-        // we'll just start a new chain in memory. 
-        // A true production system would reverse-read the file to find the last valid JSON and extract its hash.
+        String lastLine = "";
+        try (java.io.BufferedReader br = new java.io.BufferedReader(new java.io.FileReader(file))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                if (!line.trim().isEmpty()) {
+                    lastLine = line;
+                }
+            }
+            if (!lastLine.isEmpty()) {
+                AuditLogEntry entry = objectMapper.readValue(lastLine, AuditLogEntry.class);
+                return entry.getHash();
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to read last hash: " + e.getMessage());
+        }
         return "";
     }
 

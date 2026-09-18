@@ -71,6 +71,7 @@ public class AuditLogResponse {
             dto.setHash(entry.getHash());
             dto.setValid(entry.isValid());
             dto.setErrorMsg(entry.getErrorMsg());
+            dto.setContentForHashing(entry.getContentForHashing());
             return dto;
         }
     }

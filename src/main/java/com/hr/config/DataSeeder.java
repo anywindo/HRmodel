@@ -237,7 +237,19 @@ public class DataSeeder implements CommandLineRunner {
                 new PhoneNumber("5550198", "+1"),
                 new Email("contact@techcorp.com")
         );
-        CompanyProfile profile = CompanyProfile.create(detail, contact);
+        OfficeSettings officeSettings = new OfficeSettings(
+                "09:00",
+                "18:00",
+                "Monday - Friday",
+                "12:00",
+                "13:00",
+                15,
+                "America/Los_Angeles (PST/PDT)",
+                "USD",
+                "US-EIN-94-1234567",
+                "https://www.techcorp.com"
+        );
+        CompanyProfile profile = CompanyProfile.create(detail, contact, officeSettings);
         companyProfileRepository.save(profile);
         System.out.println("Company profile seeded successfully!");
     }

@@ -13,7 +13,9 @@ import java.util.function.Function;
 @Component
 public class JwtUtil {
 
-    private final Key key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
+    // Persistent 256-bit HMAC key so user sessions remain valid across restarts
+    private static final String SECRET_KEY_STRING = "c3VwZXJfc2VjdXJlX2hyX21vZGVsX2p3dF9zZWNyZXRfa2V5XzIwMjZfcHJvZHVjdGlvbg==";
+    private final Key key = Keys.hmacShaKeyFor(java.util.Base64.getDecoder().decode(SECRET_KEY_STRING));
     private final long EXPIRATION_TIME = 86400000; // 1 day
 
     public String generateToken(String email) {

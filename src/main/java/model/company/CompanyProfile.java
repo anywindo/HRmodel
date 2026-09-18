@@ -22,9 +22,12 @@ public class CompanyProfile {
     @Embedded
     private CompanyContact contact;
 
+    @Embedded
+    private OfficeSettings officeSettings;
+
     protected CompanyProfile() {}
 
-    private CompanyProfile(CompanyDetail detail, CompanyContact contact) {
+    private CompanyProfile(CompanyDetail detail, CompanyContact contact, OfficeSettings officeSettings) {
         if (detail == null) {
             throw new IllegalArgumentException("Company detail is required.");
         }
@@ -34,10 +37,15 @@ public class CompanyProfile {
 
         this.detail = detail;
         this.contact = contact;
+        this.officeSettings = officeSettings != null ? officeSettings : OfficeSettings.defaultSettings();
     }
 
     public static CompanyProfile create(CompanyDetail detail, CompanyContact contact) {
-        return new CompanyProfile(detail, contact);
+        return new CompanyProfile(detail, contact, OfficeSettings.defaultSettings());
+    }
+
+    public static CompanyProfile create(CompanyDetail detail, CompanyContact contact, OfficeSettings officeSettings) {
+        return new CompanyProfile(detail, contact, officeSettings);
     }
 
     public void updateDetail(CompanyDetail detail) {
@@ -54,6 +62,13 @@ public class CompanyProfile {
         this.contact = contact;
     }
 
+    public void updateOfficeSettings(OfficeSettings officeSettings) {
+        if (officeSettings == null) {
+            throw new IllegalArgumentException("Office settings cannot be null.");
+        }
+        this.officeSettings = officeSettings;
+    }
+
     public Long getId() {
         return id;
     }
@@ -64,6 +79,10 @@ public class CompanyProfile {
 
     public CompanyContact getContact() {
         return contact;
+    }
+
+    public OfficeSettings getOfficeSettings() {
+        return officeSettings != null ? officeSettings : OfficeSettings.defaultSettings();
     }
 
     @Override

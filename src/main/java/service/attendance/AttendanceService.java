@@ -3,15 +3,19 @@ package service.attendance;
 import com.hr.dto.attendance.AttendanceRecordDTO;
 import model.attendance.AttendanceRecord;
 import model.attendance.AttendanceStatus;
+import model.company.CompanyProfile;
+import model.company.OfficeSettings;
 import model.employee.Employee;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import repository.attendance.AttendanceRecordRepository;
+import repository.company.CompanyProfileRepository;
 import repository.employee.EmployeeRepository;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -21,10 +25,31 @@ public class AttendanceService {
 
     private final AttendanceRecordRepository attendanceRepository;
     private final EmployeeRepository employeeRepository;
+    private final CompanyProfileRepository companyProfileRepository;
 
-    public AttendanceService(AttendanceRecordRepository attendanceRepository, EmployeeRepository employeeRepository) {
+    public AttendanceService(AttendanceRecordRepository attendanceRepository,
+                             EmployeeRepository employeeRepository,
+                             CompanyProfileRepository companyProfileRepository) {
         this.attendanceRepository = attendanceRepository;
         this.employeeRepository = employeeRepository;
+        this.companyProfileRepository = companyProfileRepository;
+    }
+
+    public OfficeSettings getOfficeHours() {
+        return companyProfileRepository.findFirstByOrderByIdAsc()
+                .map(CompanyProfile::getOfficeSettings)
+                .orElseGet(OfficeSettings::defaultSettings);
+    }
+
+    private LocalTime parseTime(String timeStr, LocalTime defaultTime) {
+        if (timeStr == null || timeStr.isBlank()) {
+            return defaultTime;
+        }
+        try {
+            return LocalTime.parse(timeStr.trim());
+        } catch (Exception e) {
+            return defaultTime;
+        }
     }
 
     public List<AttendanceRecordDTO> getMyAttendance(Long employeeId, LocalDate startDate, LocalDate endDate) {
@@ -51,11 +76,15 @@ public class AttendanceService {
                     return new AttendanceRecord(emp, today, AttendanceStatus.PRESENT);
                 });
                 
-        // If already checked in, don't overwrite unless explicitly requested (simple implementation: just set it)
+        // If already checked in, don't overwrite unless explicitly requested
         record.setCheckInTime(time);
         
-        // Basic late logic (e.g., after 09:00 AM)
-        if (time.isAfter(LocalTime.of(9, 0))) {
+        OfficeSettings settings = getOfficeHours();
+        LocalTime workStartTime = parseTime(settings.getWorkStartTime(), LocalTime.of(9, 0));
+        int graceMinutes = settings.getLateGracePeriodMinutes() != null ? settings.getLateGracePeriodMinutes() : 15;
+        LocalTime lateThreshold = workStartTime.plusMinutes(graceMinutes);
+
+        if (time.isAfter(lateThreshold)) {
             record.setStatus(AttendanceStatus.LATE);
         } else {
             record.setStatus(AttendanceStatus.PRESENT);
@@ -72,9 +101,11 @@ public class AttendanceService {
                 
         record.setCheckOutTime(time);
         
-        // Basic overtime calculation (e.g., after 18:00 PM)
-        if (time.isAfter(LocalTime.of(18, 0))) {
-            long minutesOvertime = java.time.Duration.between(LocalTime.of(18, 0), time).toMinutes();
+        OfficeSettings settings = getOfficeHours();
+        LocalTime workEndTime = parseTime(settings.getWorkEndTime(), LocalTime.of(18, 0));
+
+        if (time.isAfter(workEndTime)) {
+            long minutesOvertime = java.time.Duration.between(workEndTime, time).toMinutes();
             if (minutesOvertime > 0) {
                 record.setOvertimeHours(BigDecimal.valueOf(minutesOvertime).divide(BigDecimal.valueOf(60), 2, java.math.RoundingMode.HALF_UP));
             }

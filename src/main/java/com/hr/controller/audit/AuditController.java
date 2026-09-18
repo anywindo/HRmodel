@@ -30,12 +30,14 @@ public class AuditController {
         this.objectMapper = new ObjectMapper();
         this.objectMapper.registerModule(new JavaTimeModule());
         this.objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        this.objectMapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
 
     @GetMapping("/logs")
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasAuthority('role:view')")
     public ResponseEntity<AuditLogResponse> getLogs(
             @RequestParam(required = false) String date,
+            @RequestParam(required = false, defaultValue = "false") boolean excludeRead,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "50") int size) {
         
@@ -61,47 +63,58 @@ public class AuditController {
                         // Hash Verification
                         // 1. Verify previous hash link
                         if (lineNumber > 1 && !expectedPreviousHash.equals(entry.getPreviousHash())) {
-                            entry.setValid(false);
-                            entry.setErrorMsg("Chain broken: previousHash mismatch at line " + lineNumber);
-                            tampered = true;
+                            if (entry.getPreviousHash() != null && !entry.getPreviousHash().isEmpty()) {
+                                entry.setValid(false);
+                                entry.setErrorMsg("Chain broken: previousHash mismatch at line " + lineNumber);
+                                tampered = true;
+                            }
                         }
                         
                         // 2. Verify current hash
                         String recalculatedHash = AuditLoggerService.calculateHash(entry.getContentForHashing());
-                        if (!recalculatedHash.equals(entry.getHash())) {
+                        if (entry.getHash() == null || !recalculatedHash.equalsIgnoreCase(entry.getHash())) {
                             System.out.println("HASH MISMATCH at line " + lineNumber);
                             System.out.println("Expected hash: " + entry.getHash());
                             System.out.println("Recalc hash:   " + recalculatedHash);
-                            System.out.println("Original content used for hash calculation according to log:");
-                            System.out.println(line);
-                            System.out.println("Re-evaluated content:");
-                            System.out.println(entry.getContentForHashing());
                             entry.setValid(false);
                             entry.setErrorMsg("Content tampered: hash mismatch at line " + lineNumber);
                             tampered = true;
                         }
                         
                         allEntries.add(entry);
-                        expectedPreviousHash = entry.getHash();
+                        expectedPreviousHash = entry.getHash() != null ? entry.getHash() : "";
                         
                     } catch (Exception e) {
+                        System.err.println("Audit log deserialization failed at line " + lineNumber + ": " + e.getMessage());
                         // Unparseable line
                         AuditLogEntry corruptEntry = new AuditLogEntry();
+                        corruptEntry.setId("corrupt-" + lineNumber);
                         corruptEntry.setValid(false);
-                        corruptEntry.setErrorMsg("Corrupt or unparseable JSON at line " + lineNumber);
+                        corruptEntry.setErrorMsg("Corrupt or unparseable JSON at line " + lineNumber + ": " + e.getMessage());
                         allEntries.add(corruptEntry);
                         tampered = true;
                     }
                     lineNumber++;
                 }
             } catch (Exception e) {
-                // Return server error
                 return ResponseEntity.internalServerError().build();
             }
         }
 
+        // Filter out internal automated daemon probes (like /instances or /actuator) from user display
+        List<AuditLogEntry> displayEntries = allEntries.stream()
+                .filter(e -> e.getUri() == null || (!e.getUri().startsWith("/instances") && !e.getUri().startsWith("/actuator")))
+                .collect(Collectors.toList());
+
+        // Exclude Read (GET / HEAD) requests if requested
+        if (excludeRead) {
+            displayEntries = displayEntries.stream()
+                    .filter(e -> e.getMethod() == null || (!e.getMethod().equalsIgnoreCase("GET") && !e.getMethod().equalsIgnoreCase("HEAD")))
+                    .collect(Collectors.toList());
+        }
+
         // Pagination
-        int totalElements = allEntries.size();
+        int totalElements = displayEntries.size();
         int totalPages = (int) Math.ceil((double) totalElements / size);
         
         // Ensure page is within bounds
@@ -112,7 +125,7 @@ public class AuditController {
         
         List<AuditLogEntryDTO> pagedData = new ArrayList<>();
         if (fromIndex < totalElements) {
-            pagedData = allEntries.subList(fromIndex, toIndex).stream()
+            pagedData = displayEntries.subList(fromIndex, toIndex).stream()
                     .map(AuditLogEntryDTO::from)
                     .collect(Collectors.toList());
         }

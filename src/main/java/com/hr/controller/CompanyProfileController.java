@@ -4,6 +4,7 @@ import model.company.Address;
 import model.company.CompanyContact;
 import model.company.CompanyDetail;
 import model.company.CompanyProfile;
+import model.company.OfficeSettings;
 import model.employee.Email;
 import model.employee.PhoneNumber;
 import org.springframework.http.HttpStatus;
@@ -73,7 +74,17 @@ public class CompanyProfileController {
             String phoneNumber,
             String faxCountryCode,
             String faxNumber,
-            String email
+            String email,
+            String workStartTime,
+            String workEndTime,
+            String workingDays,
+            String breakStartTime,
+            String breakEndTime,
+            Integer lateGracePeriodMinutes,
+            String timezone,
+            String currency,
+            String taxIdNumber,
+            String websiteUrl
     ) {}
 
     @PutMapping
@@ -90,12 +101,26 @@ public class CompanyProfileController {
 
         CompanyContact contact = new CompanyContact(phone, fax, email);
 
+        OfficeSettings officeSettings = new OfficeSettings(
+                req.workStartTime(),
+                req.workEndTime(),
+                req.workingDays(),
+                req.breakStartTime(),
+                req.breakEndTime(),
+                req.lateGracePeriodMinutes(),
+                req.timezone(),
+                req.currency(),
+                req.taxIdNumber(),
+                req.websiteUrl()
+        );
+
         CompanyProfile profile = repository.findFirstByOrderByIdAsc().orElseGet(() ->
-                CompanyProfile.create(detail, contact)
+                CompanyProfile.create(detail, contact, officeSettings)
         );
 
         profile.updateDetail(detail);
         profile.updateContact(contact);
+        profile.updateOfficeSettings(officeSettings);
 
         CompanyProfile saved = repository.save(profile);
         return ResponseEntity.ok(saved);

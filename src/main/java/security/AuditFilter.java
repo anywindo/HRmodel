@@ -3,6 +3,7 @@ package security;
 import com.hr.dto.audit.AuditLogEntry;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.core.Authentication;
@@ -17,18 +18,26 @@ import java.util.UUID;
 public class AuditFilter extends OncePerRequestFilter {
 
     private final AuditLoggerService auditLoggerService;
+    private final JwtUtil jwtUtil;
 
-    public AuditFilter(AuditLoggerService auditLoggerService) {
+    public AuditFilter(AuditLoggerService auditLoggerService, JwtUtil jwtUtil) {
         this.auditLoggerService = auditLoggerService;
+        this.jwtUtil = jwtUtil;
     }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
-        // Skip static resources or common exclusions if needed
         String uri = request.getRequestURI();
-        if (uri.startsWith("/assets") || uri.startsWith("/uploads") || uri.equals("/favicon.ico")) {
+
+        // Exclude internal automated pings, static assets, and system health monitors
+        if (uri.startsWith("/assets") ||
+            uri.startsWith("/uploads") ||
+            uri.equals("/favicon.ico") ||
+            uri.startsWith("/instances") ||
+            uri.startsWith("/actuator") ||
+            uri.equals("/error")) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -36,17 +45,47 @@ public class AuditFilter extends OncePerRequestFilter {
         try {
             filterChain.doFilter(request, response);
         } finally {
-            // After request completes (even if it threw an error)
-            String username = "anonymous";
+            String username = null;
+
+            // 1. Try SecurityContextHolder
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            if (auth != null && auth.isAuthenticated()) {
+            if (auth != null && auth.isAuthenticated() &&
+                !auth.getName().equalsIgnoreCase("anonymousUser") &&
+                !auth.getName().equalsIgnoreCase("anonymous")) {
                 username = auth.getName();
             }
 
-            // In some cases (like login error) authentication might be null, but we still log
-            
-            // Do not log the audit endpoint itself to avoid infinite loops of reading/logging
-            // Actually it's fine to log it, but it might create noise. We'll log it anyway for completeness.
+            // 2. Fallback: extract username directly from auth_token cookie
+            if (username == null && request.getCookies() != null && jwtUtil != null) {
+                for (Cookie cookie : request.getCookies()) {
+                    if ("auth_token".equals(cookie.getName())) {
+                        try {
+                            String email = jwtUtil.extractEmail(cookie.getValue());
+                            if (email != null && !email.trim().isEmpty()) {
+                                username = email;
+                            }
+                        } catch (Exception ignored) {}
+                        break;
+                    }
+                }
+            }
+
+            // 3. Fallback: extract username from Authorization header
+            if (username == null && jwtUtil != null) {
+                String authHeader = request.getHeader("Authorization");
+                if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                    try {
+                        String email = jwtUtil.extractEmail(authHeader.substring(7));
+                        if (email != null && !email.trim().isEmpty()) {
+                            username = email;
+                        }
+                    } catch (Exception ignored) {}
+                }
+            }
+
+            if (username == null || username.trim().isEmpty()) {
+                username = "anonymous";
+            }
 
             AuditLogEntry entry = new AuditLogEntry();
             entry.setId(UUID.randomUUID().toString());

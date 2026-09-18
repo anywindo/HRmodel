@@ -46,6 +46,11 @@ public class AttendanceController {
         return ResponseEntity.ok(attendanceService.getMyAttendance(employeeId, startDate, endDate));
     }
 
+    @GetMapping("/office-hours")
+    public ResponseEntity<model.company.OfficeSettings> getOfficeHours() {
+        return ResponseEntity.ok(attendanceService.getOfficeHours());
+    }
+
     @PostMapping("/check-in")
     public ResponseEntity<AttendanceRecordDTO> checkIn(Authentication authentication) {
         Long employeeId = getUserId(authentication);

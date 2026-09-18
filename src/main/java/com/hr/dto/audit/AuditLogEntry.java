@@ -1,7 +1,11 @@
 package com.hr.dto.audit;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.LocalDateTime;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class AuditLogEntry {
     private String id; // UUID
     private LocalDateTime timestamp;
@@ -13,10 +17,13 @@ public class AuditLogEntry {
     private String previousHash; // Hash of the previous entry
     private String hash;         // Hash of this entry (including previousHash)
     
-    @com.fasterxml.jackson.annotation.JsonIgnore
+    @JsonProperty("contentForHashing")
+    private String contentForHashing;
+    
+    @JsonIgnore
     private boolean valid = true;
     
-    @com.fasterxml.jackson.annotation.JsonIgnore
+    @JsonIgnore
     private String errorMsg;
     
     public AuditLogEntry() {}
@@ -55,12 +62,26 @@ public class AuditLogEntry {
     public String getErrorMsg() { return errorMsg; }
     public void setErrorMsg(String errorMsg) { this.errorMsg = errorMsg; }
     
+    public void setContentForHashing(String contentForHashing) {
+        this.contentForHashing = contentForHashing;
+    }
+    
     /**
      * String representation used for hashing this entry.
      * EXCLUDES the 'hash' field itself, as the hash is calculated from this content.
      */
     public String getContentForHashing() {
+        if (contentForHashing != null && !contentForHashing.isEmpty()) {
+            return contentForHashing;
+        }
         return String.format("%s|%s|%s|%s|%s|%s|%d|%s",
-                id, timestamp, username, method, uri, clientIp, status, previousHash != null ? previousHash : "");
+                id != null ? id : "",
+                timestamp != null ? timestamp.toString() : "",
+                username != null ? username : "",
+                method != null ? method : "",
+                uri != null ? uri : "",
+                clientIp != null ? clientIp : "",
+                status,
+                previousHash != null ? previousHash : "");
     }
 }

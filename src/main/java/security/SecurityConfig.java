@@ -21,10 +21,12 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final service.audit.AuditLoggerService auditLoggerService;
+    private final JwtUtil jwtUtil;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, service.audit.AuditLoggerService auditLoggerService) {
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, service.audit.AuditLoggerService auditLoggerService, JwtUtil jwtUtil) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.auditLoggerService = auditLoggerService;
+        this.jwtUtil = jwtUtil;
     }
 
     @Bean
@@ -54,7 +56,7 @@ public class SecurityConfig {
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-            .addFilterAfter(new AuditFilter(auditLoggerService), JwtAuthenticationFilter.class);
+            .addFilterAfter(new AuditFilter(auditLoggerService, jwtUtil), JwtAuthenticationFilter.class);
 
         return http.build();
     }
