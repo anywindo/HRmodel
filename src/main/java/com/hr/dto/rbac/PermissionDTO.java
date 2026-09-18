@@ -20,6 +20,8 @@ public class PermissionDTO {
         if (name.startsWith("position:")) return "Position Management";
         if (name.startsWith("company_profile:")) return "Company Profile";
         if (name.startsWith("leave:")) return "Leave Management";
+        if (name.startsWith("payroll:")) return "Payroll Management";
+        if (name.startsWith("attendance:")) return "Attendance Management";
         if (name.startsWith("role:") || name.startsWith("user:")) return "RBAC & Access Control";
         return "Other";
     }

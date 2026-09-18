@@ -7,6 +7,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import service.position.PositionService;
 
+import org.springframework.security.access.prepost.PreAuthorize;
+
 import java.util.List;
 
 @RestController
@@ -21,11 +23,13 @@ public class PositionController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'HR', 'EXECUTIVE', 'FINANCE') or hasAuthority('position:view')")
     public ResponseEntity<List<PositionResponse>> getAllPositions() {
         return ResponseEntity.ok(positionService.getAllPositions());
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'HR', 'EXECUTIVE', 'FINANCE') or hasAuthority('position:view')")
     public ResponseEntity<PositionResponse> getPositionById(@PathVariable String id) {
         try {
             return ResponseEntity.ok(positionService.getPositionById(id));
@@ -35,6 +39,7 @@ public class PositionController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'HR') or hasAuthority('position:create')")
     public ResponseEntity<?> createPosition(@RequestBody PositionRequest request) {
         try {
             PositionResponse response = positionService.createPosition(request);
@@ -47,6 +52,7 @@ public class PositionController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'HR') or hasAuthority('position:edit')")
     public ResponseEntity<?> updatePosition(@PathVariable String id, @RequestBody PositionRequest request) {
         try {
             PositionResponse response = positionService.updatePosition(id, request);
@@ -59,6 +65,7 @@ public class PositionController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'HR') or hasAuthority('position:delete')")
     public ResponseEntity<?> deletePosition(@PathVariable String id) {
         try {
             positionService.deletePosition(id);

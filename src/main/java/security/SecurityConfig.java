@@ -20,9 +20,11 @@ import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final service.audit.AuditLoggerService auditLoggerService;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, service.audit.AuditLoggerService auditLoggerService) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.auditLoggerService = auditLoggerService;
     }
 
     @Bean
@@ -48,9 +50,11 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/activate").permitAll()
                 .requestMatchers("/uploads/**").permitAll()
                 .requestMatchers("/error").permitAll()
+                .requestMatchers("/api/system/**").hasRole("SUPER_ADMIN")
                 .anyRequest().authenticated()
             )
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+            .addFilterAfter(new AuditFilter(auditLoggerService), JwtAuthenticationFilter.class);
 
         return http.build();
     }

@@ -10,6 +10,11 @@ public enum NotificationType {
     DELEGATION_CREATED,
     DELEGATION_REVOKED,
 
+    // Overtime
+    OVERTIME_REQUEST,
+    OVERTIME_APPROVED,
+    OVERTIME_REJECTED,
+
     // Employee & Profile
     EMPLOYEE_ONBOARDED,
     EMPLOYEE_PROFILE_UPDATED,

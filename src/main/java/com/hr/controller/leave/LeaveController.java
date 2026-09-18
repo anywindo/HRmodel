@@ -70,13 +70,13 @@ public class LeaveController {
         return ResponseEntity.ok(leaveService.getApprovalHistory());
     }
 
-    @PreAuthorize("hasAnyRole('HR', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('HR', 'SUPER_ADMIN') or hasAuthority('leave:manage')")
     @PostMapping("/delegate")
     public ResponseEntity<LeaveDelegationDTO> delegateApproval(@RequestBody LeaveDelegationDTO request) {
         return ResponseEntity.ok(leaveService.delegateApproval(request));
     }
 
-    @PreAuthorize("hasAnyRole('HR', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('HR', 'SUPER_ADMIN') or hasAuthority('leave:manage')")
     @GetMapping("/delegations")
     public ResponseEntity<List<LeaveDelegationDTO>> getMyDelegations() {
         return ResponseEntity.ok(leaveService.getMyDelegations());
@@ -87,7 +87,7 @@ public class LeaveController {
         return ResponseEntity.ok(leaveService.getMyReceivedDelegations());
     }
 
-    @PreAuthorize("hasAnyRole('HR', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('HR', 'SUPER_ADMIN') or hasAuthority('leave:manage')")
     @PostMapping("/delegation/{id}/revoke")
     public ResponseEntity<LeaveDelegationDTO> revokeDelegation(@PathVariable String id) {
         return ResponseEntity.ok(leaveService.revokeDelegation(id));

@@ -11,6 +11,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import repository.company.CompanyProfileRepository;
 
+import org.springframework.security.access.prepost.PreAuthorize;
+
 @RestController
 @RequestMapping("/api/company-profile")
 @CrossOrigin(origins = "${cors.allowed.origins}")
@@ -23,6 +25,7 @@ public class CompanyProfileController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'HR', 'EXECUTIVE', 'FINANCE', 'STANDARD_USER') or hasAuthority('company_profile:view')")
     public ResponseEntity<CompanyProfile> getCompanyProfile() {
         return repository.findFirstByOrderByIdAsc()
                 .map(ResponseEntity::ok)
@@ -30,6 +33,7 @@ public class CompanyProfileController {
     }
 
     @PostMapping("/logo")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'HR') or hasAuthority('company_profile:edit')")
     public ResponseEntity<java.util.Map<String, String>> uploadLogo(@RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
         if (file.isEmpty()) {
             return ResponseEntity.badRequest().body(java.util.Map.of("error", "File is empty"));
@@ -73,6 +77,7 @@ public class CompanyProfileController {
     ) {}
 
     @PutMapping
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'HR') or hasAuthority('company_profile:edit')")
     public ResponseEntity<CompanyProfile> updateCompanyProfile(@RequestBody UpdateCompanyProfileRequest req) {
         Address address = new Address(req.street(), req.city(), req.state(), req.postalCode(), req.country());
         CompanyDetail detail = new CompanyDetail(req.logoUrl(), req.companyName(), address);

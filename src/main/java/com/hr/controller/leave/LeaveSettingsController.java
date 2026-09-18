@@ -3,6 +3,7 @@ package com.hr.controller.leave;
 import com.hr.dto.leave.LeaveSettingsDTO;
 import com.hr.dto.leave.PublicHolidayDTO;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import service.leave.LeaveSettingsService;
 
@@ -19,32 +20,38 @@ public class LeaveSettingsController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('HR', 'SUPER_ADMIN') or hasAuthority('leave:view') or hasAuthority('leave:manage')")
     public ResponseEntity<LeaveSettingsDTO> getSettings() {
         return ResponseEntity.ok(leaveSettingsService.getSettings());
     }
 
     @PutMapping
+    @PreAuthorize("hasAnyRole('HR', 'SUPER_ADMIN') or hasAuthority('leave:manage')")
     public ResponseEntity<LeaveSettingsDTO> updateSettings(@RequestBody LeaveSettingsDTO dto) {
         return ResponseEntity.ok(leaveSettingsService.updateSettings(dto));
     }
 
     @GetMapping("/holidays")
+    @PreAuthorize("hasAnyRole('HR', 'SUPER_ADMIN', 'STANDARD_USER') or hasAuthority('leave:view') or hasAuthority('leave:manage')")
     public ResponseEntity<List<PublicHolidayDTO>> getAllHolidays() {
         return ResponseEntity.ok(leaveSettingsService.getAllHolidays());
     }
 
     @PostMapping("/holidays")
+    @PreAuthorize("hasAnyRole('HR', 'SUPER_ADMIN') or hasAuthority('leave:manage')")
     public ResponseEntity<PublicHolidayDTO> addHoliday(@RequestBody PublicHolidayDTO dto) {
         return ResponseEntity.ok(leaveSettingsService.addHoliday(dto));
     }
 
     @DeleteMapping("/holidays/{id}")
+    @PreAuthorize("hasAnyRole('HR', 'SUPER_ADMIN') or hasAuthority('leave:manage')")
     public ResponseEntity<Void> deleteHoliday(@PathVariable Long id) {
         leaveSettingsService.deleteHoliday(id);
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/holidays/import")
+    @PreAuthorize("hasAnyRole('HR', 'SUPER_ADMIN') or hasAuthority('leave:manage')")
     public ResponseEntity<Integer> importHolidays(@RequestBody java.util.Map<String, Object> payload) {
         int year = (Integer) payload.get("year");
         String countryCode = (String) payload.get("countryCode");

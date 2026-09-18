@@ -114,6 +114,33 @@ public class EmployeeService {
     }
 
     @Transactional(readOnly = true)
+    public List<EmployeeResponse> getMyTeam() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || auth.getPrincipal().equals("anonymousUser")) {
+            return List.of();
+        }
+
+        UserDetails userDetails = (UserDetails) auth.getPrincipal();
+        Employee myEmp = employeeRepository.findByEmail_Value(userDetails.getUsername()).orElse(null);
+        if (myEmp == null || myEmp.getPosition() == null) {
+            return List.of();
+        }
+
+        List<Employee> allEmployees = employeeRepository.findAll();
+        List<Employee> myTeam = allEmployees.stream().filter(e -> {
+            if (e.getStatus() != EmployeeStatus.ACTIVE) return false;
+            return e.getPosition() != null && e.getPosition().getReportsTo() != null &&
+                   e.getPosition().getReportsTo().getPositionId().equals(myEmp.getPosition().getPositionId());
+        }).collect(Collectors.toList());
+
+        List<LeaveDelegation> activeDelegations = leaveDelegationRepository.findAllActiveDelegations(LocalDate.now());
+        Set<String> delegatorIds = activeDelegations.stream().map(d -> d.getDelegator().getEmployeeId()).collect(Collectors.toSet());
+        Set<String> delegateeIds = activeDelegations.stream().map(d -> d.getDelegatee().getEmployeeId()).collect(Collectors.toSet());
+
+        return myTeam.stream().map(e -> new EmployeeResponse(e, allEmployees, delegatorIds.contains(e.getEmployeeId()), delegateeIds.contains(e.getEmployeeId()))).collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
     public EmployeeResponse getEmployeeById(String employeeId) {
         Employee employee = employeeRepository.findByEmployeeId(employeeId)
                 .orElseThrow(() -> new IllegalArgumentException("Employee not found"));

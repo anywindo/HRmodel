@@ -40,7 +40,9 @@ public class CustomUserDetailsService implements UserDetailsService {
             SystemAdmin admin = adminOpt.get();
             Set<GrantedAuthority> authorities = new HashSet<>();
             for (Role role : admin.getRoles()) {
-                authorities.add(new SimpleGrantedAuthority("ROLE_" + role.getName()));
+                String roleName = role.getName();
+                String roleAuth = roleName.startsWith("ROLE_") ? roleName : "ROLE_" + roleName;
+                authorities.add(new SimpleGrantedAuthority(roleAuth));
                 for (Permission permission : role.getPermissions()) {
                     authorities.add(new SimpleGrantedAuthority(permission.getName()));
                 }
@@ -63,7 +65,9 @@ public class CustomUserDetailsService implements UserDetailsService {
         Set<GrantedAuthority> authorities = new HashSet<>();
         
         for (Role role : employee.getRoles()) {
-            authorities.add(new SimpleGrantedAuthority("ROLE_" + role.getName()));
+            String roleName = role.getName();
+            String roleAuth = roleName.startsWith("ROLE_") ? roleName : "ROLE_" + roleName;
+            authorities.add(new SimpleGrantedAuthority(roleAuth));
             for (Permission permission : role.getPermissions()) {
                 authorities.add(new SimpleGrantedAuthority(permission.getName()));
             }
