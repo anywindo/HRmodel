@@ -49,6 +49,12 @@ import model.payroll.PayrollItem;
 import model.payroll.PayrollStatus;
 import model.notification.Notification;
 import model.notification.NotificationType;
+import model.performance.Kpi;
+import model.performance.KpiStatus;
+import model.performance.PerformanceReview;
+import model.performance.ReviewStatus;
+import repository.performance.KpiRepository;
+import repository.performance.PerformanceReviewRepository;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -84,6 +90,8 @@ public class DataSeeder implements CommandLineRunner {
     private final LeaveSettingsRepository leaveSettingsRepository;
     private final PublicHolidayRepository publicHolidayRepository;
     private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+    private final KpiRepository kpiRepository;
+    private final PerformanceReviewRepository performanceReviewRepository;
 
     public DataSeeder(DepartmentRepository departmentRepository,
                       PositionRepository positionRepository,
@@ -105,7 +113,9 @@ public class DataSeeder implements CommandLineRunner {
                       NotificationRepository notificationRepository,
                       LeaveSettingsRepository leaveSettingsRepository,
                       PublicHolidayRepository publicHolidayRepository,
-                      org.springframework.jdbc.core.JdbcTemplate jdbcTemplate) {
+                      org.springframework.jdbc.core.JdbcTemplate jdbcTemplate,
+                      KpiRepository kpiRepository,
+                      PerformanceReviewRepository performanceReviewRepository) {
         this.departmentRepository = departmentRepository;
         this.positionRepository = positionRepository;
         this.employeeRepository = employeeRepository;
@@ -127,6 +137,8 @@ public class DataSeeder implements CommandLineRunner {
         this.leaveSettingsRepository = leaveSettingsRepository;
         this.publicHolidayRepository = publicHolidayRepository;
         this.jdbcTemplate = jdbcTemplate;
+        this.kpiRepository = kpiRepository;
+        this.performanceReviewRepository = performanceReviewRepository;
     }
 
     @Override
@@ -151,6 +163,9 @@ public class DataSeeder implements CommandLineRunner {
                 clearPartialData();
             }
             seedData();
+        }
+        if (kpiRepository.count() == 0) {
+            seedPerformance(employeeRepository.findAll());
         }
         seedAuthData();
     }
@@ -189,6 +204,8 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private void clearPartialData() {
+        kpiRepository.deleteAllInBatch();
+        performanceReviewRepository.deleteAllInBatch();
         notificationRepository.deleteAllInBatch();
         overtimeRequestRepository.deleteAllInBatch();
         attendanceRecordRepository.deleteAllInBatch();
@@ -453,89 +470,89 @@ public class DataSeeder implements CommandLineRunner {
         // 6. Seed 16 Realistic Leave Requests
         List<LeaveRequest> leaveRequests = new ArrayList<>();
 
-        LeaveRequest req1 = new LeaveRequest(diana, LeaveType.ANNUAL, LocalDate.now().plusDays(10), LocalDate.now().plusDays(12), "Vacation in Hawaii");
+        LeaveRequest req1 = new LeaveRequest(diana, LeaveType.ANNUAL, com.hr.utils.TimeUtil.getLocalDateNow().plusDays(10), com.hr.utils.TimeUtil.getLocalDateNow().plusDays(12), "Vacation in Hawaii");
         req1.setStatus(LeaveStatus.PENDING_HR);
         req1.setManagerApprover(charlie);
         leaveRequests.add(req1);
 
-        LeaveRequest req2 = new LeaveRequest(diana, LeaveType.SICK, LocalDate.now().minusDays(5), LocalDate.now().minusDays(4), "Flu recovery and medical rest");
+        LeaveRequest req2 = new LeaveRequest(diana, LeaveType.SICK, com.hr.utils.TimeUtil.getLocalDateNow().minusDays(5), com.hr.utils.TimeUtil.getLocalDateNow().minusDays(4), "Flu recovery and medical rest");
         req2.setStatus(LeaveStatus.APPROVED);
         req2.setManagerApprover(charlie);
         req2.setHrApprover(frank);
         leaveRequests.add(req2);
 
-        LeaveRequest req3 = new LeaveRequest(charlie, LeaveType.ANNUAL, LocalDate.now().plusDays(20), LocalDate.now().plusDays(25), "Family Trip to Europe");
+        LeaveRequest req3 = new LeaveRequest(charlie, LeaveType.ANNUAL, com.hr.utils.TimeUtil.getLocalDateNow().plusDays(20), com.hr.utils.TimeUtil.getLocalDateNow().plusDays(25), "Family Trip to Europe");
         req3.setStatus(LeaveStatus.PENDING_HR);
         req3.setManagerApprover(alice);
         leaveRequests.add(req3);
 
-        LeaveRequest req4 = new LeaveRequest(kenji, LeaveType.ANNUAL, LocalDate.now().plusDays(2), LocalDate.now().plusDays(4), "Personal Matters");
+        LeaveRequest req4 = new LeaveRequest(kenji, LeaveType.ANNUAL, com.hr.utils.TimeUtil.getLocalDateNow().plusDays(2), com.hr.utils.TimeUtil.getLocalDateNow().plusDays(4), "Personal Matters");
         req4.setStatus(LeaveStatus.APPROVED);
         req4.setManagerApprover(charlie);
         req4.setHrApprover(frank);
         leaveRequests.add(req4);
 
-        LeaveRequest req5 = new LeaveRequest(sophia, LeaveType.SICK, LocalDate.now().minusDays(15), LocalDate.now().minusDays(14), "Migraine treatment");
+        LeaveRequest req5 = new LeaveRequest(sophia, LeaveType.SICK, com.hr.utils.TimeUtil.getLocalDateNow().minusDays(15), com.hr.utils.TimeUtil.getLocalDateNow().minusDays(14), "Migraine treatment");
         req5.setStatus(LeaveStatus.APPROVED);
         req5.setManagerApprover(charlie);
         req5.setHrApprover(frank);
         leaveRequests.add(req5);
 
-        LeaveRequest req6 = new LeaveRequest(marcus, LeaveType.ANNUAL, LocalDate.now().plusDays(40), LocalDate.now().plusDays(45), "Annual Leave Resort stay");
+        LeaveRequest req6 = new LeaveRequest(marcus, LeaveType.ANNUAL, com.hr.utils.TimeUtil.getLocalDateNow().plusDays(40), com.hr.utils.TimeUtil.getLocalDateNow().plusDays(45), "Annual Leave Resort stay");
         req6.setStatus(LeaveStatus.PENDING_MANAGER);
         leaveRequests.add(req6);
 
-        LeaveRequest req7 = new LeaveRequest(priya, LeaveType.MATERNITY, LocalDate.now().plusDays(5), LocalDate.now().plusDays(95), "Maternity Leave");
+        LeaveRequest req7 = new LeaveRequest(priya, LeaveType.MATERNITY, com.hr.utils.TimeUtil.getLocalDateNow().plusDays(5), com.hr.utils.TimeUtil.getLocalDateNow().plusDays(95), "Maternity Leave");
         req7.setStatus(LeaveStatus.APPROVED);
         req7.setManagerApprover(frank);
         req7.setHrApprover(frank);
         leaveRequests.add(req7);
 
-        LeaveRequest req8 = new LeaveRequest(david, LeaveType.PATERNITY, LocalDate.now().minusDays(30), LocalDate.now().minusDays(20), "Paternity Leave");
+        LeaveRequest req8 = new LeaveRequest(david, LeaveType.PATERNITY, com.hr.utils.TimeUtil.getLocalDateNow().minusDays(30), com.hr.utils.TimeUtil.getLocalDateNow().minusDays(20), "Paternity Leave");
         req8.setStatus(LeaveStatus.APPROVED);
         req8.setManagerApprover(priya);
         req8.setHrApprover(frank);
         leaveRequests.add(req8);
 
-        LeaveRequest req9 = new LeaveRequest(elena, LeaveType.UNPAID, LocalDate.now().plusDays(15), LocalDate.now().plusDays(18), "Personal sabbatical extension");
+        LeaveRequest req9 = new LeaveRequest(elena, LeaveType.UNPAID, com.hr.utils.TimeUtil.getLocalDateNow().plusDays(15), com.hr.utils.TimeUtil.getLocalDateNow().plusDays(18), "Personal sabbatical extension");
         req9.setStatus(LeaveStatus.REJECTED);
         req9.setManagerApprover(robert);
         leaveRequests.add(req9);
 
-        LeaveRequest req10 = new LeaveRequest(james, LeaveType.ANNUAL, LocalDate.now().plusDays(3), LocalDate.now().plusDays(5), "Marketing Conference & Break");
+        LeaveRequest req10 = new LeaveRequest(james, LeaveType.ANNUAL, com.hr.utils.TimeUtil.getLocalDateNow().plusDays(3), com.hr.utils.TimeUtil.getLocalDateNow().plusDays(5), "Marketing Conference & Break");
         req10.setStatus(LeaveStatus.APPROVED);
         req10.setManagerApprover(alice);
         req10.setHrApprover(frank);
         leaveRequests.add(req10);
 
-        LeaveRequest req11 = new LeaveRequest(aaliyah, LeaveType.UNPAID, LocalDate.now().minusDays(40), LocalDate.now().minusDays(37), "Family Emergency Sabbatical");
+        LeaveRequest req11 = new LeaveRequest(aaliyah, LeaveType.UNPAID, com.hr.utils.TimeUtil.getLocalDateNow().minusDays(40), com.hr.utils.TimeUtil.getLocalDateNow().minusDays(37), "Family Emergency Sabbatical");
         req11.setStatus(LeaveStatus.APPROVED);
         req11.setManagerApprover(alice);
         req11.setHrApprover(frank);
         leaveRequests.add(req11);
 
-        LeaveRequest req12 = new LeaveRequest(carlos, LeaveType.ANNUAL, LocalDate.now().plusDays(30), LocalDate.now().plusDays(35), "Scuba Diving Expedition");
+        LeaveRequest req12 = new LeaveRequest(carlos, LeaveType.ANNUAL, com.hr.utils.TimeUtil.getLocalDateNow().plusDays(30), com.hr.utils.TimeUtil.getLocalDateNow().plusDays(35), "Scuba Diving Expedition");
         req12.setStatus(LeaveStatus.PENDING_HR);
         req12.setManagerApprover(alice);
         leaveRequests.add(req12);
 
-        LeaveRequest req13 = new LeaveRequest(victor, LeaveType.SICK, LocalDate.now().minusDays(10), LocalDate.now().minusDays(9), "Dental Surgery");
+        LeaveRequest req13 = new LeaveRequest(victor, LeaveType.SICK, com.hr.utils.TimeUtil.getLocalDateNow().minusDays(10), com.hr.utils.TimeUtil.getLocalDateNow().minusDays(9), "Dental Surgery");
         req13.setStatus(LeaveStatus.APPROVED);
         req13.setManagerApprover(alice);
         req13.setHrApprover(frank);
         leaveRequests.add(req13);
 
-        LeaveRequest req14 = new LeaveRequest(nina, LeaveType.ANNUAL, LocalDate.now().plusDays(12), LocalDate.now().plusDays(16), "Summer Vacation");
+        LeaveRequest req14 = new LeaveRequest(nina, LeaveType.ANNUAL, com.hr.utils.TimeUtil.getLocalDateNow().plusDays(12), com.hr.utils.TimeUtil.getLocalDateNow().plusDays(16), "Summer Vacation");
         req14.setStatus(LeaveStatus.CANCELLED);
         leaveRequests.add(req14);
 
-        LeaveRequest req15 = new LeaveRequest(lucas, LeaveType.SICK, LocalDate.now().minusDays(2), LocalDate.now().minusDays(1), "High Fever & Cold");
+        LeaveRequest req15 = new LeaveRequest(lucas, LeaveType.SICK, com.hr.utils.TimeUtil.getLocalDateNow().minusDays(2), com.hr.utils.TimeUtil.getLocalDateNow().minusDays(1), "High Fever & Cold");
         req15.setStatus(LeaveStatus.APPROVED);
         req15.setManagerApprover(victor);
         req15.setHrApprover(frank);
         leaveRequests.add(req15);
 
-        LeaveRequest req16 = new LeaveRequest(amara, LeaveType.ANNUAL, LocalDate.now().plusDays(50), LocalDate.now().plusDays(55), "End of Year Holiday");
+        LeaveRequest req16 = new LeaveRequest(amara, LeaveType.ANNUAL, com.hr.utils.TimeUtil.getLocalDateNow().plusDays(50), com.hr.utils.TimeUtil.getLocalDateNow().plusDays(55), "End of Year Holiday");
         req16.setStatus(LeaveStatus.PENDING_MANAGER);
         leaveRequests.add(req16);
 
@@ -543,34 +560,35 @@ public class DataSeeder implements CommandLineRunner {
 
         // 7. Seed 15 Leave Delegations
         List<LeaveDelegation> delegations = new ArrayList<>();
-        delegations.add(new LeaveDelegation(alice, charlie, LocalDate.now().minusDays(1), LocalDate.now().plusDays(30)));
-        delegations.add(new LeaveDelegation(robert, marcus, LocalDate.now().plusDays(5), LocalDate.now().plusDays(20)));
-        delegations.add(new LeaveDelegation(frank, priya, LocalDate.now().plusDays(10), LocalDate.now().plusDays(25)));
-        delegations.add(new LeaveDelegation(charlie, kenji, LocalDate.now().plusDays(20), LocalDate.now().plusDays(35)));
-        delegations.add(new LeaveDelegation(priya, david, LocalDate.now().plusDays(5), LocalDate.now().plusDays(95)));
-        delegations.add(new LeaveDelegation(victor, lucas, LocalDate.now().plusDays(15), LocalDate.now().plusDays(30)));
-        delegations.add(new LeaveDelegation(nina, amara, LocalDate.now().plusDays(12), LocalDate.now().plusDays(26)));
-        delegations.add(new LeaveDelegation(carlos, diana, LocalDate.now().plusDays(30), LocalDate.now().plusDays(40)));
-        delegations.add(new LeaveDelegation(marcus, kenji, LocalDate.now().plusDays(40), LocalDate.now().plusDays(50)));
-        delegations.add(new LeaveDelegation(elena, sarah, LocalDate.now().plusDays(8), LocalDate.now().plusDays(18)));
-        delegations.add(new LeaveDelegation(james, aaliyah, LocalDate.now().plusDays(3), LocalDate.now().plusDays(10)));
-        delegations.add(new LeaveDelegation(tariq, amara, LocalDate.now().plusDays(2), LocalDate.now().plusDays(12)));
-        delegations.add(new LeaveDelegation(sophia, diana, LocalDate.now().plusDays(14), LocalDate.now().plusDays(21)));
-        delegations.add(new LeaveDelegation(hannah, frank, LocalDate.now().plusDays(18), LocalDate.now().plusDays(28)));
-        delegations.add(new LeaveDelegation(david, priya, LocalDate.now().plusDays(22), LocalDate.now().plusDays(32)));
+        delegations.add(new LeaveDelegation(alice, charlie, com.hr.utils.TimeUtil.getLocalDateNow().minusDays(1), com.hr.utils.TimeUtil.getLocalDateNow().plusDays(30)));
+        delegations.add(new LeaveDelegation(robert, marcus, com.hr.utils.TimeUtil.getLocalDateNow().plusDays(5), com.hr.utils.TimeUtil.getLocalDateNow().plusDays(20)));
+        delegations.add(new LeaveDelegation(frank, priya, com.hr.utils.TimeUtil.getLocalDateNow().plusDays(10), com.hr.utils.TimeUtil.getLocalDateNow().plusDays(25)));
+        delegations.add(new LeaveDelegation(charlie, kenji, com.hr.utils.TimeUtil.getLocalDateNow().plusDays(20), com.hr.utils.TimeUtil.getLocalDateNow().plusDays(35)));
+        delegations.add(new LeaveDelegation(priya, david, com.hr.utils.TimeUtil.getLocalDateNow().plusDays(5), com.hr.utils.TimeUtil.getLocalDateNow().plusDays(95)));
+        delegations.add(new LeaveDelegation(victor, lucas, com.hr.utils.TimeUtil.getLocalDateNow().plusDays(15), com.hr.utils.TimeUtil.getLocalDateNow().plusDays(30)));
+        delegations.add(new LeaveDelegation(nina, amara, com.hr.utils.TimeUtil.getLocalDateNow().plusDays(12), com.hr.utils.TimeUtil.getLocalDateNow().plusDays(26)));
+        delegations.add(new LeaveDelegation(carlos, diana, com.hr.utils.TimeUtil.getLocalDateNow().plusDays(30), com.hr.utils.TimeUtil.getLocalDateNow().plusDays(40)));
+        delegations.add(new LeaveDelegation(marcus, kenji, com.hr.utils.TimeUtil.getLocalDateNow().plusDays(40), com.hr.utils.TimeUtil.getLocalDateNow().plusDays(50)));
+        delegations.add(new LeaveDelegation(elena, sarah, com.hr.utils.TimeUtil.getLocalDateNow().plusDays(8), com.hr.utils.TimeUtil.getLocalDateNow().plusDays(18)));
+        delegations.add(new LeaveDelegation(james, aaliyah, com.hr.utils.TimeUtil.getLocalDateNow().plusDays(3), com.hr.utils.TimeUtil.getLocalDateNow().plusDays(10)));
+        delegations.add(new LeaveDelegation(tariq, amara, com.hr.utils.TimeUtil.getLocalDateNow().plusDays(2), com.hr.utils.TimeUtil.getLocalDateNow().plusDays(12)));
+        delegations.add(new LeaveDelegation(sophia, diana, com.hr.utils.TimeUtil.getLocalDateNow().plusDays(14), com.hr.utils.TimeUtil.getLocalDateNow().plusDays(21)));
+        delegations.add(new LeaveDelegation(hannah, frank, com.hr.utils.TimeUtil.getLocalDateNow().plusDays(18), com.hr.utils.TimeUtil.getLocalDateNow().plusDays(28)));
+        delegations.add(new LeaveDelegation(david, priya, com.hr.utils.TimeUtil.getLocalDateNow().plusDays(22), com.hr.utils.TimeUtil.getLocalDateNow().plusDays(32)));
         leaveDelegationRepository.saveAll(delegations);
 
         // 8. Seed Attendance Records (Past 15 weekdays for active staff = 300+ records)
         for (Employee emp : employees) {
             if (emp.getStatus() == EmployeeStatus.ACTIVE) {
                 for (int i = 0; i < 15; i++) {
-                    LocalDate d = LocalDate.now().minusDays(i);
+                    LocalDate d = com.hr.utils.TimeUtil.getLocalDateNow().minusDays(i);
                     if (d.getDayOfWeek().getValue() < 6) { // Weekdays
                         AttendanceStatus status = (i == 2 && emp == diana) ? AttendanceStatus.LATE : AttendanceStatus.PRESENT;
                         AttendanceRecord rec = new AttendanceRecord(emp, d, status);
                         
-                        int checkInMin = (status == AttendanceStatus.LATE) ? 45 : (int) (Math.random() * 25);
-                        rec.setCheckInTime(LocalTime.of(8, checkInMin));
+                        int checkInHour = (status == AttendanceStatus.LATE) ? 8 : 7;
+                        int checkInMin = (status == AttendanceStatus.LATE) ? (int) (Math.random() * 59) : 30 + (int) (Math.random() * 15);
+                        rec.setCheckInTime(LocalTime.of(checkInHour, checkInMin));
                         
                         int checkOutMin = (int) (Math.random() * 30);
                         if (i % 3 == 1) { // Overtime days
@@ -587,22 +605,22 @@ public class DataSeeder implements CommandLineRunner {
 
         // 9. Seed 16 Overtime Requests
         List<OvertimeRequest> otRequests = new ArrayList<>();
-        otRequests.add(new OvertimeRequest(diana, LocalDate.now().minusDays(1), new BigDecimal("2.5"), "Q3 Sprint Release Testing"));
-        otRequests.add(new OvertimeRequest(kenji, LocalDate.now(), new BigDecimal("3.0"), "Cloud Infrastructure Upgrade & Migration"));
-        otRequests.add(new OvertimeRequest(sophia, LocalDate.now().minusDays(3), new BigDecimal("2.0"), "Automated Regression Test Suite Run"));
-        otRequests.add(new OvertimeRequest(marcus, LocalDate.now().minusDays(4), new BigDecimal("4.0"), "Disaster Recovery Drill & Failover Setup"));
-        otRequests.add(new OvertimeRequest(lucas, LocalDate.now().minusDays(5), new BigDecimal("3.5"), "SOC Threat Hunting & Security Patching"));
-        otRequests.add(new OvertimeRequest(amara, LocalDate.now().minusDays(6), new BigDecimal("2.0"), "ETL Pipeline Pipeline Optimization"));
-        otRequests.add(new OvertimeRequest(tariq, LocalDate.now().minusDays(7), new BigDecimal("3.0"), "LLM Fine-Tuning & Model Evaluation"));
-        otRequests.add(new OvertimeRequest(sarah, LocalDate.now().minusDays(8), new BigDecimal("2.5"), "Monthly Payroll Audit & Tax Processing"));
-        otRequests.add(new OvertimeRequest(aaliyah, LocalDate.now().minusDays(9), new BigDecimal("1.5"), "Design System Component Review"));
-        otRequests.add(new OvertimeRequest(james, LocalDate.now().minusDays(10), new BigDecimal("3.0"), "Q4 Marketing Campaign Launch"));
-        otRequests.add(new OvertimeRequest(david, LocalDate.now().minusDays(11), new BigDecimal("2.0"), "New Employee Onboarding Orientation Prep"));
-        otRequests.add(new OvertimeRequest(carlos, LocalDate.now().minusDays(12), new BigDecimal("4.0"), "Tier-1 Customer Escalation Resolution"));
-        otRequests.add(new OvertimeRequest(elena, LocalDate.now().minusDays(13), new BigDecimal("3.5"), "Quarterly Budget Forecast Preparation"));
-        otRequests.add(new OvertimeRequest(priya, LocalDate.now().minusDays(14), new BigDecimal("2.0"), "Executive Hiring Panel Interviewing"));
-        otRequests.add(new OvertimeRequest(hannah, LocalDate.now().minusDays(15), new BigDecimal("3.0"), "Vendor Contract Compliance Audit"));
-        otRequests.add(new OvertimeRequest(victor, LocalDate.now().minusDays(16), new BigDecimal("4.5"), "Critical Vulnerability Mitigation"));
+        otRequests.add(new OvertimeRequest(diana, com.hr.utils.TimeUtil.getLocalDateNow().minusDays(1), new BigDecimal("2.5"), "Q3 Sprint Release Testing"));
+        otRequests.add(new OvertimeRequest(kenji, com.hr.utils.TimeUtil.getLocalDateNow(), new BigDecimal("3.0"), "Cloud Infrastructure Upgrade & Migration"));
+        otRequests.add(new OvertimeRequest(sophia, com.hr.utils.TimeUtil.getLocalDateNow().minusDays(3), new BigDecimal("2.0"), "Automated Regression Test Suite Run"));
+        otRequests.add(new OvertimeRequest(marcus, com.hr.utils.TimeUtil.getLocalDateNow().minusDays(4), new BigDecimal("4.0"), "Disaster Recovery Drill & Failover Setup"));
+        otRequests.add(new OvertimeRequest(lucas, com.hr.utils.TimeUtil.getLocalDateNow().minusDays(5), new BigDecimal("3.5"), "SOC Threat Hunting & Security Patching"));
+        otRequests.add(new OvertimeRequest(amara, com.hr.utils.TimeUtil.getLocalDateNow().minusDays(6), new BigDecimal("2.0"), "ETL Pipeline Pipeline Optimization"));
+        otRequests.add(new OvertimeRequest(tariq, com.hr.utils.TimeUtil.getLocalDateNow().minusDays(7), new BigDecimal("3.0"), "LLM Fine-Tuning & Model Evaluation"));
+        otRequests.add(new OvertimeRequest(sarah, com.hr.utils.TimeUtil.getLocalDateNow().minusDays(8), new BigDecimal("2.5"), "Monthly Payroll Audit & Tax Processing"));
+        otRequests.add(new OvertimeRequest(aaliyah, com.hr.utils.TimeUtil.getLocalDateNow().minusDays(9), new BigDecimal("1.5"), "Design System Component Review"));
+        otRequests.add(new OvertimeRequest(james, com.hr.utils.TimeUtil.getLocalDateNow().minusDays(10), new BigDecimal("3.0"), "Q4 Marketing Campaign Launch"));
+        otRequests.add(new OvertimeRequest(david, com.hr.utils.TimeUtil.getLocalDateNow().minusDays(11), new BigDecimal("2.0"), "New Employee Onboarding Orientation Prep"));
+        otRequests.add(new OvertimeRequest(carlos, com.hr.utils.TimeUtil.getLocalDateNow().minusDays(12), new BigDecimal("4.0"), "Tier-1 Customer Escalation Resolution"));
+        otRequests.add(new OvertimeRequest(elena, com.hr.utils.TimeUtil.getLocalDateNow().minusDays(13), new BigDecimal("3.5"), "Quarterly Budget Forecast Preparation"));
+        otRequests.add(new OvertimeRequest(priya, com.hr.utils.TimeUtil.getLocalDateNow().minusDays(14), new BigDecimal("2.0"), "Executive Hiring Panel Interviewing"));
+        otRequests.add(new OvertimeRequest(hannah, com.hr.utils.TimeUtil.getLocalDateNow().minusDays(15), new BigDecimal("3.0"), "Vendor Contract Compliance Audit"));
+        otRequests.add(new OvertimeRequest(victor, com.hr.utils.TimeUtil.getLocalDateNow().minusDays(16), new BigDecimal("4.5"), "Critical Vulnerability Mitigation"));
 
         // Assign status variations
         otRequests.get(0).setStatus(OvertimeRequestStatus.APPROVED);
@@ -682,6 +700,84 @@ public class DataSeeder implements CommandLineRunner {
         }
 
         System.out.println("Diverse and relevant dummy data seeded successfully with " + employees.size() + " employees across 15 departments and 25 positions!");
+    }
+
+    private void seedPerformance(List<Employee> employees) {
+        List<Kpi> kpis = new ArrayList<>();
+        List<PerformanceReview> reviews = new ArrayList<>();
+        
+        for (Employee emp : employees) {
+            if (emp.getStatus() != EmployeeStatus.ACTIVE) continue;
+
+            // KPIs
+            Kpi k1 = new Kpi();
+            k1.setEmployee(emp);
+            k1.setTitle("Project Delivery Timeliness");
+            k1.setDescription("Complete assigned tasks and projects by their deadlines");
+            k1.setTargetValue(100.0);
+            k1.setActualValue(92.5);
+            k1.setStatus(KpiStatus.ON_TRACK);
+            k1.setStartDate(com.hr.utils.TimeUtil.getLocalDateNow().withDayOfYear(1));
+            k1.setEndDate(com.hr.utils.TimeUtil.getLocalDateNow().withDayOfYear(1).plusYears(1).minusDays(1));
+            k1.setWeight(40.0);
+            kpis.add(k1);
+
+            Kpi k2 = new Kpi();
+            k2.setEmployee(emp);
+            k2.setTitle("Code Quality & Bug Rate");
+            k2.setDescription("Maintain a low post-deployment bug rate and adhere to coding standards");
+            k2.setTargetValue(95.0);
+            k2.setActualValue(96.2);
+            k2.setStatus(KpiStatus.ACHIEVED);
+            k2.setStartDate(com.hr.utils.TimeUtil.getLocalDateNow().withDayOfYear(1));
+            k2.setEndDate(com.hr.utils.TimeUtil.getLocalDateNow().withDayOfYear(1).plusYears(1).minusDays(1));
+            k2.setWeight(30.0);
+            kpis.add(k2);
+
+            Kpi k3 = new Kpi();
+            k3.setEmployee(emp);
+            k3.setTitle("Team Collaboration");
+            k3.setDescription("Participate in code reviews, mentoring, and team meetings");
+            k3.setTargetValue(100.0);
+            k3.setActualValue(75.0);
+            k3.setStatus(KpiStatus.AT_RISK);
+            k3.setStartDate(com.hr.utils.TimeUtil.getLocalDateNow().withDayOfYear(1));
+            k3.setEndDate(com.hr.utils.TimeUtil.getLocalDateNow().withDayOfYear(1).plusYears(1).minusDays(1));
+            k3.setWeight(30.0);
+            kpis.add(k3);
+            
+            // Reviews
+            PerformanceReview r1 = new PerformanceReview();
+            r1.setEmployee(emp);
+            r1.setReviewer(null);
+            r1.setReviewPeriod("2025 Annual Review");
+            r1.setStatus(ReviewStatus.COMPLETED);
+            r1.setOverallScore(4.2);
+            r1.setComments("Excellent performance throughout the year. Consistently delivers high-quality work and mentors junior team members effectively.");
+            reviews.add(r1);
+
+            PerformanceReview r2 = new PerformanceReview();
+            r2.setEmployee(emp);
+            r2.setReviewer(null);
+            r2.setReviewPeriod("Q1 2026 Review");
+            r2.setStatus(ReviewStatus.COMPLETED);
+            r2.setOverallScore(3.8);
+            r2.setComments("Good start to the year. Needs to focus a bit more on documentation and cross-team communication.");
+            reviews.add(r2);
+            
+            PerformanceReview r3 = new PerformanceReview();
+            r3.setEmployee(emp);
+            r3.setReviewer(null);
+            r3.setReviewPeriod("Q2 2026 Review");
+            r3.setStatus(ReviewStatus.IN_PROGRESS);
+            r3.setOverallScore(null);
+            r3.setComments("Mid-year check in progress...");
+            reviews.add(r3);
+        }
+        
+        kpiRepository.saveAll(kpis);
+        performanceReviewRepository.saveAll(reviews);
+        System.out.println("Performance data seeded successfully!");
     }
 
     private void seedAuthData() {

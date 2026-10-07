@@ -89,7 +89,7 @@ public class AuditFilter extends OncePerRequestFilter {
 
             AuditLogEntry entry = new AuditLogEntry();
             entry.setId(UUID.randomUUID().toString());
-            entry.setTimestamp(LocalDateTime.now());
+            entry.setTimestamp(com.hr.utils.TimeUtil.getLocalDateTimeNow());
             entry.setMethod(request.getMethod());
             entry.setUri(uri);
             entry.setClientIp(getClientIp(request));

@@ -49,14 +49,14 @@ public class OvertimeRequest {
         this.hoursRequested = hoursRequested;
         this.reason = reason;
         this.status = OvertimeRequestStatus.PENDING_HR;
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
+        this.createdAt = com.hr.utils.TimeUtil.getLocalDateTimeNow();
+        this.updatedAt = com.hr.utils.TimeUtil.getLocalDateTimeNow();
     }
 
 
     @PreUpdate
     public void preUpdate() {
-        this.updatedAt = LocalDateTime.now();
+        this.updatedAt = com.hr.utils.TimeUtil.getLocalDateTimeNow();
     }
 
     public Long getId() { return id; }

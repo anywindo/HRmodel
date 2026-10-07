@@ -10,6 +10,7 @@ import service.attendance.AttendanceService;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.List;
 
 @RestController
@@ -54,13 +55,25 @@ public class AttendanceController {
     @PostMapping("/check-in")
     public ResponseEntity<AttendanceRecordDTO> checkIn(Authentication authentication) {
         Long employeeId = getUserId(authentication);
-        return ResponseEntity.ok(attendanceService.checkIn(employeeId, LocalTime.now()));
+        return ResponseEntity.ok(attendanceService.checkIn(employeeId, LocalTime.now(ZoneId.of("GMT+7"))));
     }
 
     @PostMapping("/check-out")
     public ResponseEntity<AttendanceRecordDTO> checkOut(Authentication authentication) {
         Long employeeId = getUserId(authentication);
-        return ResponseEntity.ok(attendanceService.checkOut(employeeId, LocalTime.now()));
+        return ResponseEntity.ok(attendanceService.checkOut(employeeId, LocalTime.now(ZoneId.of("GMT+7"))));
+    }
+
+    @PostMapping("/break/start")
+    public ResponseEntity<AttendanceRecordDTO> startBreak(Authentication authentication) {
+        Long employeeId = getUserId(authentication);
+        return ResponseEntity.ok(attendanceService.startBreak(employeeId, LocalTime.now(ZoneId.of("GMT+7"))));
+    }
+
+    @PostMapping("/break/end")
+    public ResponseEntity<AttendanceRecordDTO> endBreak(Authentication authentication) {
+        Long employeeId = getUserId(authentication);
+        return ResponseEntity.ok(attendanceService.endBreak(employeeId, LocalTime.now(ZoneId.of("GMT+7"))));
     }
 
     // HR / Admin endpoints

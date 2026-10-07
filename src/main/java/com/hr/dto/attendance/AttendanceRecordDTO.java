@@ -16,6 +16,12 @@ public class AttendanceRecordDTO {
     private LocalTime checkInTime;
 
     @JsonFormat(pattern = "HH:mm:ss")
+    private LocalTime breakStartTime;
+
+    @JsonFormat(pattern = "HH:mm:ss")
+    private LocalTime breakEndTime;
+
+    @JsonFormat(pattern = "HH:mm:ss")
     private LocalTime checkOutTime;
 
     private AttendanceStatus status;
@@ -38,6 +44,12 @@ public class AttendanceRecordDTO {
 
     public LocalTime getCheckInTime() { return checkInTime; }
     public void setCheckInTime(LocalTime checkInTime) { this.checkInTime = checkInTime; }
+
+    public LocalTime getBreakStartTime() { return breakStartTime; }
+    public void setBreakStartTime(LocalTime breakStartTime) { this.breakStartTime = breakStartTime; }
+
+    public LocalTime getBreakEndTime() { return breakEndTime; }
+    public void setBreakEndTime(LocalTime breakEndTime) { this.breakEndTime = breakEndTime; }
 
     public LocalTime getCheckOutTime() { return checkOutTime; }
     public void setCheckOutTime(LocalTime checkOutTime) { this.checkOutTime = checkOutTime; }

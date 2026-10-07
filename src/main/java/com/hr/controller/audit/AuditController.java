@@ -41,7 +41,7 @@ public class AuditController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "50") int size) {
         
-        LocalDate targetDate = (date != null && !date.isEmpty()) ? LocalDate.parse(date) : LocalDate.now();
+        LocalDate targetDate = (date != null && !date.isEmpty()) ? LocalDate.parse(date) : com.hr.utils.TimeUtil.getLocalDateNow();
         String filename = LOG_DIR + "/audit-" + targetDate.toString() + ".jsonl";
         File file = new File(filename);
 

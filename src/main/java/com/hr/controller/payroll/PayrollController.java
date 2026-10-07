@@ -179,7 +179,7 @@ public class PayrollController {
         }
 
         item.setIsAcknowledged(true);
-        item.setAcknowledgedAt(LocalDateTime.now());
+        item.setAcknowledgedAt(com.hr.utils.TimeUtil.getLocalDateTimeNow());
         
         // Get IP address
         String ipAddress = request.getHeader("X-Forwarded-For");

@@ -60,7 +60,7 @@ public class PayrollSettingsService {
         settings.setBpjsJpEmployerRate(dto.getBpjsJpEmployerRate());
         settings.setBpjsJkkRate(dto.getBpjsJkkRate());
         settings.setBpjsJkmRate(dto.getBpjsJkmRate());
-        settings.setUpdatedAt(LocalDateTime.now());
+        settings.setUpdatedAt(com.hr.utils.TimeUtil.getLocalDateTimeNow());
 
         // Replace tax brackets (orphanRemoval = true handles deletions)
         settings.getTaxBrackets().clear();

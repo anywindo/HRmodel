@@ -66,7 +66,7 @@ public class LeaveRequest {
             this.status = LeaveStatus.PENDING_HR;
         }
         
-        this.createdAt = LocalDateTime.now();
+        this.createdAt = com.hr.utils.TimeUtil.getLocalDateTimeNow();
     }
 
     public LeaveRequest() {}

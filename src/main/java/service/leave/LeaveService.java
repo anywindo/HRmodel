@@ -192,7 +192,7 @@ public class LeaveService {
         List<String> subPosIds = getAllSubordinatePositionIds(myEmp.getPosition().getPositionId().getValue());
         
         // Add subordinates of delegators who delegated to me
-        List<LeaveDelegation> delegations = leaveDelegationRepository.findActiveDelegationsForDelegatee(myEmp.getEmployeeId(), LocalDate.now());
+        List<LeaveDelegation> delegations = leaveDelegationRepository.findActiveDelegationsForDelegatee(myEmp.getEmployeeId(), com.hr.utils.TimeUtil.getLocalDateNow());
         for (LeaveDelegation del : delegations) {
             if (del.getDelegator().getPosition() != null) {
                 subPosIds.addAll(getAllSubordinatePositionIds(del.getDelegator().getPosition().getPositionId().getValue()));
@@ -331,7 +331,7 @@ public class LeaveService {
             throw new IllegalArgumentException("Cannot cancel a request that is already " + request.getStatus());
         }
         
-        if (request.getStartDate().isBefore(LocalDate.now())) {
+        if (request.getStartDate().isBefore(com.hr.utils.TimeUtil.getLocalDateNow())) {
             throw new IllegalArgumentException("Cannot cancel a leave that has already started or is in the past. Please contact HR.");
         }
         
@@ -404,7 +404,7 @@ public class LeaveService {
             List<String> subPosIds = getAllSubordinatePositionIds(myEmp.getPosition().getPositionId().getValue());
             
             // Add subordinates of delegators who delegated to me
-            List<LeaveDelegation> delegations = leaveDelegationRepository.findActiveDelegationsForDelegatee(myEmp.getEmployeeId(), LocalDate.now());
+            List<LeaveDelegation> delegations = leaveDelegationRepository.findActiveDelegationsForDelegatee(myEmp.getEmployeeId(), com.hr.utils.TimeUtil.getLocalDateNow());
             for (LeaveDelegation del : delegations) {
                 if (del.getDelegator().getPosition() != null) {
                     subPosIds.addAll(getAllSubordinatePositionIds(del.getDelegator().getPosition().getPositionId().getValue()));

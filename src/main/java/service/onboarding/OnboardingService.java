@@ -94,7 +94,7 @@ public class OnboardingService {
         EmployeeTask task = employeeTaskRepository.findById(employeeTaskId)
                 .orElseThrow(() -> new RuntimeException("Task not found"));
         task.setStatus("COMPLETED");
-        task.setCompletedAt(LocalDateTime.now());
+        task.setCompletedAt(com.hr.utils.TimeUtil.getLocalDateTimeNow());
         task.setCompletedById(userId);
         employeeTaskRepository.save(task);
     }

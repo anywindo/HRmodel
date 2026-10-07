@@ -62,7 +62,7 @@ public class EmployeeService {
         
         List<Employee> allEmployees = employeeRepository.findAll();
         
-        List<LeaveDelegation> activeDelegations = leaveDelegationRepository.findAllActiveDelegations(LocalDate.now());
+        List<LeaveDelegation> activeDelegations = leaveDelegationRepository.findAllActiveDelegations(com.hr.utils.TimeUtil.getLocalDateNow());
         Set<String> delegatorIds = activeDelegations.stream().map(d -> d.getDelegator().getEmployeeId()).collect(Collectors.toSet());
         Set<String> delegateeIds = activeDelegations.stream().map(d -> d.getDelegatee().getEmployeeId()).collect(Collectors.toSet());
 
@@ -106,7 +106,7 @@ public class EmployeeService {
         List<Employee> allEmployees = employeeRepository.findAll();
         List<Employee> filtered = employeeRepository.findByPosition_Department_DepartmentIdValue(departmentId.toUpperCase());
         
-        List<LeaveDelegation> activeDelegations = leaveDelegationRepository.findAllActiveDelegations(LocalDate.now());
+        List<LeaveDelegation> activeDelegations = leaveDelegationRepository.findAllActiveDelegations(com.hr.utils.TimeUtil.getLocalDateNow());
         Set<String> delegatorIds = activeDelegations.stream().map(d -> d.getDelegator().getEmployeeId()).collect(Collectors.toSet());
         Set<String> delegateeIds = activeDelegations.stream().map(d -> d.getDelegatee().getEmployeeId()).collect(Collectors.toSet());
 
@@ -133,7 +133,7 @@ public class EmployeeService {
                    e.getPosition().getReportsTo().getPositionId().equals(myEmp.getPosition().getPositionId());
         }).collect(Collectors.toList());
 
-        List<LeaveDelegation> activeDelegations = leaveDelegationRepository.findAllActiveDelegations(LocalDate.now());
+        List<LeaveDelegation> activeDelegations = leaveDelegationRepository.findAllActiveDelegations(com.hr.utils.TimeUtil.getLocalDateNow());
         Set<String> delegatorIds = activeDelegations.stream().map(d -> d.getDelegator().getEmployeeId()).collect(Collectors.toSet());
         Set<String> delegateeIds = activeDelegations.stream().map(d -> d.getDelegatee().getEmployeeId()).collect(Collectors.toSet());
 
@@ -145,7 +145,7 @@ public class EmployeeService {
         Employee employee = employeeRepository.findByEmployeeId(employeeId)
                 .orElseThrow(() -> new IllegalArgumentException("Employee not found"));
 
-        List<LeaveDelegation> activeDelegations = leaveDelegationRepository.findAllActiveDelegations(LocalDate.now());
+        List<LeaveDelegation> activeDelegations = leaveDelegationRepository.findAllActiveDelegations(com.hr.utils.TimeUtil.getLocalDateNow());
         Set<String> delegatorIds = activeDelegations.stream().map(d -> d.getDelegator().getEmployeeId()).collect(Collectors.toSet());
         Set<String> delegateeIds = activeDelegations.stream().map(d -> d.getDelegatee().getEmployeeId()).collect(Collectors.toSet());
 

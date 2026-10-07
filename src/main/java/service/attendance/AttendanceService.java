@@ -16,6 +16,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -68,7 +69,7 @@ public class AttendanceService {
 
     public AttendanceRecordDTO checkIn(Long employeeId, LocalTime time) {
         time = time.withNano(0);
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(ZoneId.of("GMT+7"));
         AttendanceRecord record = attendanceRepository.findByEmployeeIdAndDate(employeeId, today)
                 .orElseGet(() -> {
                     Employee emp = employeeRepository.findById(employeeId)
@@ -82,7 +83,7 @@ public class AttendanceService {
         OfficeSettings settings = getOfficeHours();
         LocalTime workStartTime = parseTime(settings.getWorkStartTime(), LocalTime.of(9, 0));
         int graceMinutes = settings.getLateGracePeriodMinutes() != null ? settings.getLateGracePeriodMinutes() : 15;
-        LocalTime lateThreshold = workStartTime.plusMinutes(graceMinutes);
+        LocalTime lateThreshold = workStartTime.minusMinutes(graceMinutes);
 
         if (time.isAfter(lateThreshold)) {
             record.setStatus(AttendanceStatus.LATE);
@@ -95,7 +96,7 @@ public class AttendanceService {
 
     public AttendanceRecordDTO checkOut(Long employeeId, LocalTime time) {
         time = time.withNano(0);
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(ZoneId.of("GMT+7"));
         AttendanceRecord record = attendanceRepository.findByEmployeeIdAndDate(employeeId, today)
                 .orElseThrow(() -> new RuntimeException("No check-in record found for today"));
                 
@@ -114,11 +115,33 @@ public class AttendanceService {
         return mapToDTO(attendanceRepository.save(record));
     }
 
+    public AttendanceRecordDTO startBreak(Long employeeId, LocalTime time) {
+        time = time.withNano(0);
+        LocalDate today = LocalDate.now(ZoneId.of("GMT+7"));
+        AttendanceRecord record = attendanceRepository.findByEmployeeIdAndDate(employeeId, today)
+                .orElseThrow(() -> new RuntimeException("No check-in record found for today"));
+                
+        record.setBreakStartTime(time);
+        return mapToDTO(attendanceRepository.save(record));
+    }
+
+    public AttendanceRecordDTO endBreak(Long employeeId, LocalTime time) {
+        time = time.withNano(0);
+        LocalDate today = LocalDate.now(ZoneId.of("GMT+7"));
+        AttendanceRecord record = attendanceRepository.findByEmployeeIdAndDate(employeeId, today)
+                .orElseThrow(() -> new RuntimeException("No check-in record found for today"));
+                
+        record.setBreakEndTime(time);
+        return mapToDTO(attendanceRepository.save(record));
+    }
+
     public AttendanceRecordDTO updateAttendance(Long id, AttendanceRecordDTO dto) {
         AttendanceRecord record = attendanceRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Record not found"));
                 
         record.setCheckInTime(dto.getCheckInTime());
+        record.setBreakStartTime(dto.getBreakStartTime());
+        record.setBreakEndTime(dto.getBreakEndTime());
         record.setCheckOutTime(dto.getCheckOutTime());
         record.setStatus(dto.getStatus());
         record.setOvertimeHours(dto.getOvertimeHours());
@@ -136,6 +159,8 @@ public class AttendanceService {
                 .orElse(new AttendanceRecord(emp, dto.getDate(), dto.getStatus()));
                 
         record.setCheckInTime(dto.getCheckInTime());
+        record.setBreakStartTime(dto.getBreakStartTime());
+        record.setBreakEndTime(dto.getBreakEndTime());
         record.setCheckOutTime(dto.getCheckOutTime());
         record.setStatus(dto.getStatus());
         record.setOvertimeHours(dto.getOvertimeHours());
@@ -151,6 +176,8 @@ public class AttendanceService {
         dto.setEmployeeName(record.getEmployee().getFullName().getFirstName() + " " + record.getEmployee().getFullName().getLastName());
         dto.setDate(record.getDate());
         dto.setCheckInTime(record.getCheckInTime());
+        dto.setBreakStartTime(record.getBreakStartTime());
+        dto.setBreakEndTime(record.getBreakEndTime());
         dto.setCheckOutTime(record.getCheckOutTime());
         dto.setStatus(record.getStatus());
         dto.setOvertimeHours(record.getOvertimeHours());

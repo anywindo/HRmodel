@@ -46,7 +46,7 @@ public class Notification {
         this.referenceId = referenceId;
         this.actionUrl = actionUrl;
         this.isRead = false;
-        this.createdAt = LocalDateTime.now();
+        this.createdAt = com.hr.utils.TimeUtil.getLocalDateTimeNow();
     }
 
     public Long getId() { return id; }

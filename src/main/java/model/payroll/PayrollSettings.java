@@ -64,7 +64,7 @@ public class PayrollSettings {
     private List<TaxBracket> taxBrackets = new ArrayList<>();
 
     @Column(nullable = false)
-    private LocalDateTime updatedAt = LocalDateTime.now();
+    private LocalDateTime updatedAt = com.hr.utils.TimeUtil.getLocalDateTimeNow();
 
     public PayrollSettings() {}
 

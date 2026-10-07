@@ -98,7 +98,7 @@ public class AuditLoggerService {
     }
 
     private void processEntry(AuditLogEntry entry) throws Exception {
-        LocalDate today = LocalDate.now();
+        LocalDate today = com.hr.utils.TimeUtil.getLocalDateNow();
         
         if (currentWriter == null || currentLogDate == null || !currentLogDate.equals(today)) {
             rollFile(today);

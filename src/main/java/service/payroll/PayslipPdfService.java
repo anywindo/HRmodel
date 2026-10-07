@@ -317,7 +317,7 @@ public class PayslipPdfService {
 
             String empDateStr = Boolean.TRUE.equals(item.getIsAcknowledged()) && item.getAcknowledgedAt() != null
                     ? "Date: " + item.getAcknowledgedAt().format(DateTimeFormatter.ofPattern("dd MMMM yyyy"))
-                    : "Date: " + LocalDate.now().format(DateTimeFormatter.ofPattern("dd MMMM yyyy"));
+                    : "Date: " + com.hr.utils.TimeUtil.getLocalDateNow().format(DateTimeFormatter.ofPattern("dd MMMM yyyy"));
             Paragraph pEmpDate = new Paragraph(empDateStr, regularFont);
             sigLeft.addElement(pEmpDate);
 
@@ -366,7 +366,7 @@ public class PayslipPdfService {
 
             String issueDateStr = "Date: " + (item.getPayrollRun() != null && item.getPayrollRun().getCreatedAt() != null
                     ? item.getPayrollRun().getCreatedAt().format(DateTimeFormatter.ofPattern("dd MMMM yyyy"))
-                    : LocalDate.now().format(DateTimeFormatter.ofPattern("dd MMMM yyyy")));
+                    : com.hr.utils.TimeUtil.getLocalDateNow().format(DateTimeFormatter.ofPattern("dd MMMM yyyy")));
             Paragraph pHrDate = new Paragraph(issueDateStr, regularFont);
             pHrDate.setAlignment(Element.ALIGN_RIGHT);
             sigRight.addElement(pHrDate);
@@ -394,7 +394,7 @@ public class PayslipPdfService {
                     periodName,
                     fmt(item.getNetPay(), format),
                     docHash,
-                    LocalDate.now().format(DateTimeFormatter.ofPattern("dd MMM yyyy"))
+                    com.hr.utils.TimeUtil.getLocalDateNow().format(DateTimeFormatter.ofPattern("dd MMM yyyy"))
             );
             Image corpQr = createQrCodeImage(corpPayload, 55);
             if (corpQr != null) {

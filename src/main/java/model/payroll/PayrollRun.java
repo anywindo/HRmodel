@@ -32,7 +32,7 @@ public class PayrollRun {
     private List<PayrollItem> items = new ArrayList<>();
 
     // Audit fields
-    private LocalDate createdAt = LocalDate.now();
+    private LocalDate createdAt = com.hr.utils.TimeUtil.getLocalDateNow();
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")

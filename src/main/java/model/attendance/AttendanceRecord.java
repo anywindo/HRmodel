@@ -24,6 +24,10 @@ public class AttendanceRecord {
 
     private LocalTime checkInTime;
     
+    private LocalTime breakStartTime;
+    
+    private LocalTime breakEndTime;
+    
     private LocalTime checkOutTime;
 
     @Enumerated(EnumType.STRING)
@@ -55,6 +59,12 @@ public class AttendanceRecord {
 
     public LocalTime getCheckInTime() { return checkInTime; }
     public void setCheckInTime(LocalTime checkInTime) { this.checkInTime = checkInTime; }
+
+    public LocalTime getBreakStartTime() { return breakStartTime; }
+    public void setBreakStartTime(LocalTime breakStartTime) { this.breakStartTime = breakStartTime; }
+
+    public LocalTime getBreakEndTime() { return breakEndTime; }
+    public void setBreakEndTime(LocalTime breakEndTime) { this.breakEndTime = breakEndTime; }
 
     public LocalTime getCheckOutTime() { return checkOutTime; }
     public void setCheckOutTime(LocalTime checkOutTime) { this.checkOutTime = checkOutTime; }
