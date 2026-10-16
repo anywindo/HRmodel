@@ -8,6 +8,7 @@ import model.payroll.PayrollStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import repository.employee.EmployeeRepository;
+import repository.payroll.PayrollItemRepository;
 import repository.payroll.PayrollRunRepository;
 
 import java.time.LocalDate;
@@ -20,13 +21,16 @@ public class PayrollService {
     private final PayrollRunRepository payrollRunRepository;
     private final EmployeeRepository employeeRepository;
     private final PayrollCalculationService calculationService;
+    private final PayrollItemRepository payrollItemRepository;
 
     public PayrollService(PayrollRunRepository payrollRunRepository, 
                           EmployeeRepository employeeRepository,
-                          PayrollCalculationService calculationService) {
+                          PayrollCalculationService calculationService,
+                          PayrollItemRepository payrollItemRepository) {
         this.payrollRunRepository = payrollRunRepository;
         this.employeeRepository = employeeRepository;
         this.calculationService = calculationService;
+        this.payrollItemRepository = payrollItemRepository;
     }
 
     public List<PayrollRun> getAllRuns() {
@@ -91,14 +95,7 @@ public class PayrollService {
     }
 
     public PayrollItem getPayrollItem(Long itemId) {
-        // Find the item across all runs, or just add PayrollItemRepository
-        // We'll search in all runs for simplicity or add a repository. 
-        // Adding a repository is better, but since it's an entity, let's just query it.
-        // Actually I don't have PayrollItemRepository. I will just do a manual search for now.
-        return payrollRunRepository.findAll().stream()
-                .flatMap(run -> run.getItems().stream())
-                .filter(item -> item.getId().equals(itemId))
-                .findFirst()
+        return payrollItemRepository.findById(itemId)
                 .orElseThrow(() -> new RuntimeException("Payroll item not found"));
     }
     
