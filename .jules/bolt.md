@@ -1,4 +1,3 @@
-
-## 2026-10-16 - [In-Memory Search Anti-Pattern]
-**Learning:** Found an O(N) in-memory search across an entire table (using `findAll().stream().flatMap(...)`) in the service layer where a simple indexed database lookup (`findById`) via a Repository should be used.
-**Action:** Always check if a Repository exists or can be created to offload search and filter operations to the database level rather than doing it in-memory.
+## 2024-05-18 - N+1 Saves in Scheduled Tasks
+**Learning:** Found an anti-pattern in the Spring Boot backend where JPA `save()` was being called inside loops during batch processing tasks like `runMonthlyAccruals`. This causes N individual database queries.
+**Action:** Always look for iterative database writes and replace them with batch `saveAll()` calls outside the loop for bulk operations.

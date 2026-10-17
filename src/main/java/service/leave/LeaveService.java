@@ -491,13 +491,20 @@ public class LeaveService {
         }
 
         List<EmployeeLeaveBalance> allBalances = balanceRepository.findAll();
+        List<EmployeeLeaveBalance> updatedBalances = new ArrayList<>();
+
         for (EmployeeLeaveBalance balance : allBalances) {
             if (balance.getEmployee().getStatus() == model.employee.EmployeeStatus.ACTIVE) {
                 double currentAnnual = balance.getAnnualLeaveDays();
                 double toAdd = settings.getAccrualRatePerMonth().doubleValue();
                 balance.setAnnualLeaveDays(currentAnnual + toAdd);
-                balanceRepository.save(balance);
+                updatedBalances.add(balance);
             }
+        }
+
+        // ⚡ Bolt Optimization: Batch save modified balances to prevent N+1 database queries
+        if (!updatedBalances.isEmpty()) {
+            balanceRepository.saveAll(updatedBalances);
         }
     }
 
@@ -510,6 +517,8 @@ public class LeaveService {
         }
 
         List<EmployeeLeaveBalance> allBalances = balanceRepository.findAll();
+        List<EmployeeLeaveBalance> updatedBalances = new ArrayList<>();
+
         for (EmployeeLeaveBalance balance : allBalances) {
             if (balance.getEmployee().getStatus() == model.employee.EmployeeStatus.ACTIVE) {
                 double currentAnnual = balance.getAnnualLeaveDays();
@@ -519,8 +528,13 @@ public class LeaveService {
                 
                 // Reset sick leave
                 balance.setSickLeaveDays(settings.getDefaultSickLeaveDays());
-                balanceRepository.save(balance);
+                updatedBalances.add(balance);
             }
+        }
+
+        // ⚡ Bolt Optimization: Batch save modified balances to prevent N+1 database queries
+        if (!updatedBalances.isEmpty()) {
+            balanceRepository.saveAll(updatedBalances);
         }
     }
 
