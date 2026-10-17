@@ -51,7 +51,6 @@ public class AuthController {
         String email = loginRequest.getEmail() != null ? loginRequest.getEmail().trim() : "";
         String password = loginRequest.getPassword() != null ? loginRequest.getPassword().trim() : "";
         
-        System.out.println("Login attempt: email='" + email + "', password='" + password + "'");
         try {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(email, password)
@@ -101,8 +100,8 @@ public class AuthController {
 
             return ResponseEntity.ok(responseBody);
         } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials: " + e.getMessage());
+            // Do not print stack trace or leak internal messages
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials");
         }
     }
 
