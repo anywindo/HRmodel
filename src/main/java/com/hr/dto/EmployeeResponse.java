@@ -4,6 +4,7 @@ import model.employee.Employee;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 public class EmployeeResponse {
     private Long id;
@@ -28,22 +29,22 @@ public class EmployeeResponse {
     private boolean isDelegatee;
 
     public EmployeeResponse(Employee employee) {
-        this(employee, null, null, false, false);
+        this(employee, (Map<String, String>) null, null, false, false);
     }
 
-    public EmployeeResponse(Employee employee, List<Employee> allEmployees) {
-        this(employee, allEmployees, null, false, false);
+    public EmployeeResponse(Employee employee, Map<String, String> positionToNameMap) {
+        this(employee, positionToNameMap, null, false, false);
     }
 
     public EmployeeResponse(Employee employee, String activationToken) {
-        this(employee, null, activationToken, false, false);
+        this(employee, (Map<String, String>) null, activationToken, false, false);
     }
     
-    public EmployeeResponse(Employee employee, List<Employee> allEmployees, boolean isDelegator, boolean isDelegatee) {
-        this(employee, allEmployees, null, isDelegator, isDelegatee);
+    public EmployeeResponse(Employee employee, Map<String, String> positionToNameMap, boolean isDelegator, boolean isDelegatee) {
+        this(employee, positionToNameMap, null, isDelegator, isDelegatee);
     }
 
-    public EmployeeResponse(Employee employee, List<Employee> allEmployees, String activationToken, boolean isDelegator, boolean isDelegatee) {
+    public EmployeeResponse(Employee employee, Map<String, String> positionToNameMap, String activationToken, boolean isDelegator, boolean isDelegatee) {
         this.id = employee.getId();
         this.employeeId = employee.getEmployeeId();
         this.fullName = new FullNameDto(
@@ -72,12 +73,8 @@ public class EmployeeResponse {
                 String rtPosId = employee.getPosition().getReportsTo().getPositionId().getValue();
                 String rtTitle = employee.getPosition().getReportsTo().getTitle();
                 String supervisorName = null;
-                if (allEmployees != null) {
-                    supervisorName = allEmployees.stream()
-                        .filter(e -> e.getPosition() != null && e.getPosition().getPositionId().getValue().equals(rtPosId))
-                        .findFirst()
-                        .map(e -> e.getFullName().getFirstName() + " " + e.getFullName().getLastName())
-                        .orElse(null);
+                if (positionToNameMap != null) {
+                    supervisorName = positionToNameMap.get(rtPosId);
                 }
                 reportsToDto = new ReportsToDto(rtPosId, rtTitle, supervisorName);
             }
