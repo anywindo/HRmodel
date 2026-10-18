@@ -29,6 +29,7 @@ import model.notification.NotificationType;
 import service.email.EmailService;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -54,6 +55,16 @@ public class EmployeeService {
         this.passwordEncoder = passwordEncoder;
     }
 
+    private Map<String, String> buildPositionToNameMap(List<Employee> employees) {
+        return employees.stream()
+                .filter(e -> e.getPosition() != null)
+                .collect(Collectors.toMap(
+                        e -> e.getPosition().getPositionId().getValue(),
+                        e -> e.getFullName().getFirstName() + " " + e.getFullName().getLastName(),
+                        (existing, replacement) -> existing
+                ));
+    }
+
     @Transactional(readOnly = true)
     public List<EmployeeResponse> getAllEmployees() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -61,13 +72,14 @@ public class EmployeeService {
             a.getAuthority().equals("ROLE_SUPER_ADMIN") || a.getAuthority().equals("ROLE_HR") || a.getAuthority().equals("ROLE_EXECUTIVE"));
         
         List<Employee> allEmployees = employeeRepository.findAll();
+        Map<String, String> positionToNameMap = buildPositionToNameMap(allEmployees);
         
         List<LeaveDelegation> activeDelegations = leaveDelegationRepository.findAllActiveDelegations(com.hr.utils.TimeUtil.getLocalDateNow());
         Set<String> delegatorIds = activeDelegations.stream().map(d -> d.getDelegator().getEmployeeId()).collect(Collectors.toSet());
         Set<String> delegateeIds = activeDelegations.stream().map(d -> d.getDelegatee().getEmployeeId()).collect(Collectors.toSet());
 
         if (canSeeAll) {
-            return allEmployees.stream().map(e -> new EmployeeResponse(e, allEmployees, delegatorIds.contains(e.getEmployeeId()), delegateeIds.contains(e.getEmployeeId()))).collect(Collectors.toList());
+            return allEmployees.stream().map(e -> new EmployeeResponse(e, positionToNameMap, delegatorIds.contains(e.getEmployeeId()), delegateeIds.contains(e.getEmployeeId()))).collect(Collectors.toList());
         }
         
         if (auth == null || !auth.isAuthenticated() || auth.getPrincipal().equals("anonymousUser")) {
@@ -99,18 +111,19 @@ public class EmployeeService {
             }
             return false;
         }).collect(Collectors.toList());
-        return filtered.stream().map(e -> new EmployeeResponse(e, allEmployees, delegatorIds.contains(e.getEmployeeId()), delegateeIds.contains(e.getEmployeeId()))).collect(Collectors.toList());
+        return filtered.stream().map(e -> new EmployeeResponse(e, positionToNameMap, delegatorIds.contains(e.getEmployeeId()), delegateeIds.contains(e.getEmployeeId()))).collect(Collectors.toList());
     }
 
     public List<EmployeeResponse> getEmployeesByDepartmentId(String departmentId) {
         List<Employee> allEmployees = employeeRepository.findAll();
+        Map<String, String> positionToNameMap = buildPositionToNameMap(allEmployees);
         List<Employee> filtered = employeeRepository.findByPosition_Department_DepartmentIdValue(departmentId.toUpperCase());
         
         List<LeaveDelegation> activeDelegations = leaveDelegationRepository.findAllActiveDelegations(com.hr.utils.TimeUtil.getLocalDateNow());
         Set<String> delegatorIds = activeDelegations.stream().map(d -> d.getDelegator().getEmployeeId()).collect(Collectors.toSet());
         Set<String> delegateeIds = activeDelegations.stream().map(d -> d.getDelegatee().getEmployeeId()).collect(Collectors.toSet());
 
-        return filtered.stream().map(e -> new EmployeeResponse(e, allEmployees, delegatorIds.contains(e.getEmployeeId()), delegateeIds.contains(e.getEmployeeId()))).collect(Collectors.toList());
+        return filtered.stream().map(e -> new EmployeeResponse(e, positionToNameMap, delegatorIds.contains(e.getEmployeeId()), delegateeIds.contains(e.getEmployeeId()))).collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
@@ -127,6 +140,7 @@ public class EmployeeService {
         }
 
         List<Employee> allEmployees = employeeRepository.findAll();
+        Map<String, String> positionToNameMap = buildPositionToNameMap(allEmployees);
         List<Employee> myTeam = allEmployees.stream().filter(e -> {
             if (e.getStatus() != EmployeeStatus.ACTIVE) return false;
             return e.getPosition() != null && e.getPosition().getReportsTo() != null &&
@@ -137,7 +151,7 @@ public class EmployeeService {
         Set<String> delegatorIds = activeDelegations.stream().map(d -> d.getDelegator().getEmployeeId()).collect(Collectors.toSet());
         Set<String> delegateeIds = activeDelegations.stream().map(d -> d.getDelegatee().getEmployeeId()).collect(Collectors.toSet());
 
-        return myTeam.stream().map(e -> new EmployeeResponse(e, allEmployees, delegatorIds.contains(e.getEmployeeId()), delegateeIds.contains(e.getEmployeeId()))).collect(Collectors.toList());
+        return myTeam.stream().map(e -> new EmployeeResponse(e, positionToNameMap, delegatorIds.contains(e.getEmployeeId()), delegateeIds.contains(e.getEmployeeId()))).collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
@@ -145,11 +159,14 @@ public class EmployeeService {
         Employee employee = employeeRepository.findByEmployeeId(employeeId)
                 .orElseThrow(() -> new IllegalArgumentException("Employee not found"));
 
+        List<Employee> allEmployees = employeeRepository.findAll();
+        Map<String, String> positionToNameMap = buildPositionToNameMap(allEmployees);
+
         List<LeaveDelegation> activeDelegations = leaveDelegationRepository.findAllActiveDelegations(com.hr.utils.TimeUtil.getLocalDateNow());
         Set<String> delegatorIds = activeDelegations.stream().map(d -> d.getDelegator().getEmployeeId()).collect(Collectors.toSet());
         Set<String> delegateeIds = activeDelegations.stream().map(d -> d.getDelegatee().getEmployeeId()).collect(Collectors.toSet());
 
-        return new EmployeeResponse(employee, employeeRepository.findAll(), delegatorIds.contains(employee.getEmployeeId()), delegateeIds.contains(employee.getEmployeeId()));
+        return new EmployeeResponse(employee, positionToNameMap, delegatorIds.contains(employee.getEmployeeId()), delegateeIds.contains(employee.getEmployeeId()));
     }
 
     @Transactional
