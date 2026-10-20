@@ -126,18 +126,16 @@ public class EmployeeService {
             return List.of();
         }
 
-        List<Employee> allEmployees = employeeRepository.findAll();
-        List<Employee> myTeam = allEmployees.stream().filter(e -> {
-            if (e.getStatus() != EmployeeStatus.ACTIVE) return false;
-            return e.getPosition() != null && e.getPosition().getReportsTo() != null &&
-                   e.getPosition().getReportsTo().getPositionId().equals(myEmp.getPosition().getPositionId());
-        }).collect(Collectors.toList());
+        List<Employee> myTeam = employeeRepository.findByStatusAndPosition_ReportsTo_PositionId_Value(
+            EmployeeStatus.ACTIVE,
+            myEmp.getPosition().getPositionId().getValue()
+        );
 
         List<LeaveDelegation> activeDelegations = leaveDelegationRepository.findAllActiveDelegations(com.hr.utils.TimeUtil.getLocalDateNow());
         Set<String> delegatorIds = activeDelegations.stream().map(d -> d.getDelegator().getEmployeeId()).collect(Collectors.toSet());
         Set<String> delegateeIds = activeDelegations.stream().map(d -> d.getDelegatee().getEmployeeId()).collect(Collectors.toSet());
 
-        return myTeam.stream().map(e -> new EmployeeResponse(e, allEmployees, delegatorIds.contains(e.getEmployeeId()), delegateeIds.contains(e.getEmployeeId()))).collect(Collectors.toList());
+        return myTeam.stream().map(e -> new EmployeeResponse(e, List.of(myEmp), delegatorIds.contains(e.getEmployeeId()), delegateeIds.contains(e.getEmployeeId()))).collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)

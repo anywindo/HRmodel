@@ -12,6 +12,7 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
     java.util.List<Employee> findByPosition_Department_DepartmentIdValue(String departmentId);
     java.util.List<Employee> findByPosition_PositionId(model.position.PositionId positionId);
     java.util.List<Employee> findByPosition_PositionId_Value(String positionIdValue);
+    java.util.List<Employee> findByStatusAndPosition_ReportsTo_PositionId_Value(model.employee.EmployeeStatus status, String reportsToPositionIdValue);
     Optional<Employee> findByEmail_Value(String email);
     long countByRoles_Id(Long roleId);
     java.util.List<Employee> findByRoles_Name(String roleName);
