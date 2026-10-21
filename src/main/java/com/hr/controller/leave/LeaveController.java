@@ -115,11 +115,18 @@ public class LeaveController {
             String originalFilename = file.getOriginalFilename();
             String extension = "";
             if (originalFilename != null && originalFilename.contains(".")) {
-                extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+                // Sanitize extension to prevent path traversal characters
+                extension = originalFilename.substring(originalFilename.lastIndexOf(".")).replaceAll("[^a-zA-Z0-9.]", "");
             }
             String uniqueFileName = UUID.randomUUID().toString() + extension;
             
-            Path filePath = uploadDir.resolve(uniqueFileName);
+            Path filePath = uploadDir.resolve(uniqueFileName).normalize();
+
+            // Security check: prevent path traversal attacks
+            if (!filePath.startsWith(uploadDir)) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Invalid file name"));
+            }
+
             file.transferTo(filePath.toFile());
             
             return ResponseEntity.ok(Map.of("url", "/uploads/" + uniqueFileName));

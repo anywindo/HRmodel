@@ -196,7 +196,11 @@ public class LeaveServiceTest {
     void cancelRequest_RefundsBalance() {
         setupAuthentication();
 
-        LeaveRequest request = new LeaveRequest(mockEmployee, LeaveType.ANNUAL, LocalDate.now().plusDays(10), LocalDate.now().plusDays(11), "Vacation");
+        LocalDate start = LocalDate.now().plusDays(10);
+        while (start.getDayOfWeek() == java.time.DayOfWeek.SATURDAY || start.getDayOfWeek() == java.time.DayOfWeek.SUNDAY) {
+            start = start.plusDays(1);
+        }
+        LeaveRequest request = new LeaveRequest(mockEmployee, LeaveType.ANNUAL, start, start, "Vacation");
         request.setRequestId("REQ-001");
         request.setStatus(LeaveStatus.APPROVED);
 
