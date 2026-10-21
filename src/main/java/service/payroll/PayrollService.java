@@ -47,9 +47,8 @@ public class PayrollService {
         Employee creator = employeeRepository.findById(creatorId).orElseThrow();
         PayrollRun run = new PayrollRun(periodName, periodStart, periodEnd, creator);
         
-        List<Employee> activeEmployees = employeeRepository.findAll().stream()
-                .filter(e -> e.getStatus() == EmployeeStatus.ACTIVE)
-                .toList();
+        // Optimized: fetching only active employees using DB index
+        List<Employee> activeEmployees = employeeRepository.findByStatus(EmployeeStatus.ACTIVE);
 
         for (Employee emp : activeEmployees) {
             PayrollItem item = new PayrollItem(emp);

@@ -15,4 +15,5 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
     Optional<Employee> findByEmail_Value(String email);
     long countByRoles_Id(Long roleId);
     java.util.List<Employee> findByRoles_Name(String roleName);
+    java.util.List<Employee> findByStatus(model.employee.EmployeeStatus status);
 }

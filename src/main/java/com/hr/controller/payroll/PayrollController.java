@@ -73,8 +73,8 @@ public class PayrollController {
             Authentication authentication) {
         Long creatorId = getEmployeeIdOrNull(authentication);
         if (creatorId == null) {
-            creatorId = employeeRepository.findAll().stream()
-                    .filter(e -> e.getStatus() == model.employee.EmployeeStatus.ACTIVE)
+            // Optimized: fetching active employees directly using DB query instead of in-memory filtering
+            creatorId = employeeRepository.findByStatus(model.employee.EmployeeStatus.ACTIVE).stream()
                     .map(model.employee.Employee::getId)
                     .findFirst()
                     .orElse(1L);
